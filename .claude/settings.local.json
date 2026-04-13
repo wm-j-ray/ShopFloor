@@ -1,0 +1,34 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "Bash(brew install:*)",
+      "Read(//opt/homebrew/Cellar/**)",
+      "Read(//opt/homebrew/bin/**)",
+      "Read(//usr/local/bin/**)",
+      "Bash(brew --prefix poppler)",
+      "Bash(export PATH=\"/opt/homebrew/bin:$PATH\")",
+      "Bash(pdftoppm -r 150 -png \"/Users/wmjray/Desktop/WriteTrack/Design Documents/Proof Of Concept /Diarium Parsing-The Reunion.pdf\" /tmp/diarium_page)",
+      "Read(//private/tmp/**)",
+      "Bash(pdftoppm -r 300 -png \"/Users/wmjray/Desktop/WriteTrack/Design Documents/Proof Of Concept /Diarium Parsing-The Reunion.pdf\" /tmp/diarium_hires)",
+      "Bash(ls -lh /tmp/diarium_hires*.png)",
+      "Bash(sqlite3 ~/Library/Containers/mac.partl.Diarium/Data/data.db \".tables\" echo \"---\" sqlite3 ~/Library/Containers/mac.partl.Diarium/Data/data.db \".schema\")",
+      "Bash(sqlite3 ~/Library/Containers/mac.partl.Diarium/Data/data.db \"SELECT COUNT\\(*\\) FROM Entries;\")",
+      "Bash(sqlite3 ~/Library/Containers/mac.partl.Diarium/Data/data.db \"SELECT DiaryEntryId, Heading, substr\\(Text,1,100\\) FROM Entries ORDER BY DiaryEntryId LIMIT 3;\")",
+      "Bash(sqlite3 ~/Library/Containers/mac.partl.Diarium/Data/data.db \"SELECT DiaryEntryId, Heading, substr\\(Text,1,100\\) FROM Entries ORDER BY DiaryEntryId DESC LIMIT 3;\")",
+      "Bash(sqlite3 ~/Library/Containers/mac.partl.Diarium/Data/data.db \"SELECT * FROM Tags LIMIT 20;\")",
+      "Bash(sqlite3 '~/Library/Containers/mac.partl.Diarium/Data/data.db' ':*)",
+      "Bash(sqlite3 ~/Library/Containers/mac.partl.Diarium/Data/data.db \"SELECT Type, COUNT\\(*\\) FROM Events GROUP BY Type;\")",
+      "Bash(ls \"/Users/wmjray/Desktop/WriteTrack/Data Structures/Noun Data Structures/\"*.txt)",
+      "Bash(python3 convert_writetrack.py)",
+      "Bash(cp \"/Users/wmjray/Desktop/WriteTrack/Data Structures/Noun Data Structures/markdown/Character_Profile.md\" \"/Users/wmjray/Desktop/WriteTrack/Data Structures/markdown/Noun Data Structures/Character_Profile.md\")",
+      "Bash(cp \"/Users/wmjray/Desktop/WriteTrack/Data Structures/Noun Data Structures/markdown/Particle.md\" \"/Users/wmjray/Desktop/WriteTrack/Data Structures/markdown/Noun Data Structures/Particle.md\")",
+      "Bash(ls /Users/wmjray/Desktop/*.md)",
+      "Bash(python3 -c ':*)",
+      "Bash(find \"/Users/wmjray/Desktop/WriteTrack/Data Structures/markdown\" -name \"*.md\" -exec basename {} .md \\\\;)",
+      "Bash(find \"/Users/wmjray/Desktop/WriteTrack/Data Structures\" -name \"*.md\" -exec basename {} .md \\\\;)",
+      "Skill(office-hours)",
+      "Skill(office-hours:*)"
+    ]
+  }
+}
