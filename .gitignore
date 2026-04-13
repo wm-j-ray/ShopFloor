@@ -1,0 +1,13 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# gstack session files (local only)
+.gstack/sessions/
+.gstack/browse-console.log
+.gstack/browse-network.log
+
+# Claude Code local settings (machine-specific)
+.claude/settings.local.json
