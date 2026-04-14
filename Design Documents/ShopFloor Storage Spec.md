@@ -319,15 +319,39 @@ These are the things that exist in Karen's story. Each is a JSON record instanti
 
 ### 6.2.1 Particle Storage — A Special Case
 
-The Particle is the foundational capture entity — the raw material Karen types, speaks, photographs, or shares from anywhere. It is the most connected entity in the object model, linking optionally to Characters, Scenes, Wounds, and Locations.
+**A particle is a tag on a file.** Not a separate data structure. Not a JSON record in `object-model/`. When Karen promotes a file by saying "this might be something," ShopFloor sets `isParticle: true` in the file's existing per-file metadata record in `.shopfloor/files/[UUID].json`. The file stays exactly where Karen put it — her inbox notebook, her cybercrime notebook, wherever. ShopFloor doesn't move it or copy it. It just notes: *this file has been elevated.*
 
-**Storage location:** Particles live **below the waterline** in `.shopfloor/object-model/` as JSON records, not as `.md` files Karen browses directly. The reasons:
+**"Show me my particles"** is a filtered view. Show all files where `isParticle: true`. A lens on existing files, not a separate data store.
 
-1. **Volume.** A serious writer may capture hundreds of particles. Mixing them with chapter files pollutes Karen's book view.
-2. **Source diversity.** Particles arrive from any iOS app via the Share Sheet, from direct in-app entry, from connected vaults, from batch imports, or from files dropped manually. They are not "pages" in the book/page metaphor — they are raw material the system manages.
-3. **The above-waterline representation is the app.** Karen sees her particles when she asks for them ("What do I have about Rob's wound?") or when they resurface during a query. The app renders them as browsable cards. The JSON files stay hidden.
+This eliminates:
+- The `Particle_PRT00001.json` pattern in `object-model/`
+- The `PRT` counter in idCounters
+- The Particle as a separate schema entity
 
-**Particle IDs** use a 5-digit zero-padded sequence (`PRT-00001`) rather than the 3-digit pattern used by other entities, reflecting the expected higher volume.
+**Particle fields live in** `.shopfloor/files/[UUID].json` — the per-file metadata record that already exists for every file (see Section 5.2). When Karen promotes a file, particle-specific fields are added to that record:
+
+```json
+{
+  "uuid": "8F3A2C1D...",
+  "currentFilename": "swatting-nyc.md",
+  "relativePath": "Cybercrime/swatting-nyc.md",
+  "isParticle": true,
+  "particleStatus": "raw",
+  "resonanceNote": "",
+  "captureMethod": "share_sheet",
+  "sourceApp": "Safari",
+  "sourceURL": "",
+  "sourceType": "",
+  "linkedEntities": [],
+  "linkedStartingLineup": "",
+  "lastSurfaced": "",
+  "surfaceCount": 0
+}
+```
+
+**File protection:** Karen is fully protected when she renames or moves files. The UUID never changes. The per-file metadata record updates `currentFilename` and `relativePath` automatically via the self-healing rename detection system (Section 11). The particle tag follows the file silently.
+
+**This is NOT a macOS tag.** Nothing to do with Finder colored labels. `isParticle` is a field in a hidden JSON file Karen never sees.
 
 ### The Capture Philosophy
 
@@ -383,9 +407,7 @@ ShopFloor registers as a Share Sheet extension. This means every app on iOS — 
 
 Every path to capture — Share Sheet, direct in-app typing, voice, Shortcut, paste, file drop — routes through the same capture sheet and the same two-layer model. The mechanism changes; the experience doesn't.
 
-**Particle IDs** use a 5-digit zero-padded sequence (`PRT-00001`) rather than the 3-digit pattern used by other entities, reflecting the expected higher volume.
-
-**Capture origin tracking:** Every particle records two things about how it entered the system — the *method* (a closed enum) and the *source* (an open string). These are separate fields because the method determines how the system processed the particle, while the source is provenance metadata that doesn't affect behavior.
+**Capture origin tracking:** Every particle records two things about how it entered the system — the *method* (a closed enum) and the *source* (an open string).
 
 `captureMethod` — closed enum, controls processing logic:
 - `share_sheet` — captured via iOS Share Sheet from any external app. Source app name auto-populated from Share Sheet metadata. **This is the primary mobile capture path.**
@@ -393,10 +415,21 @@ Every path to capture — Share Sheet, direct in-app typing, voice, Shortcut, pa
 - `import` — pulled from an external data source via structured extract (batch operation)
 - `sync` — ingested from a connected vault or note system (file-based, ongoing)
 - `manual` — pasted, dragged in, or file-dropped via Files picker
+- `promoted` — file already existed in Karen's notebooks; she elevated it to particle status
 
-`sourceApp` — open string, provenance only. For `share_sheet` captures, this is auto-populated from the Share Sheet's source bundle metadata — Karen never types it. Examples: `"Safari"`, `"Photos"`, `"Diarium"`, `"Obsidian"`, `"Reddit"`, `"Instagram"`, `"Bear"`, `"Day One"`, `"Shortcuts"`. Empty for `direct` entries. Any app, any future app, requires no schema change — just record the string.
+`sourceApp` — open string, provenance only. For `share_sheet` captures, this is auto-populated from the Share Sheet's source bundle metadata — Karen never types it. Any app, any future app, requires no schema change — just record the string. Never hardcode app names.
 
-**Status state machine:** `raw -> considered -> placed` (forward only, v1). Status advances are logged to the audit trail. Initial status is set at save time based on Layer 2 engagement (see table above).
+**Status lifecycle:** `raw → considered → developing → placed`. `shelved` is a lateral exit from any state except `placed`.
+
+| Status | Meaning |
+|--------|---------|
+| `raw` | Promoted but not yet engaged with |
+| `considered` | Karen engaged — resonance note added, or entity pre-assigned |
+| `developing` | Karen is actively working this toward a Starting Line-Up |
+| `placed` | Incorporated into an active project |
+| `shelved` | Intentionally set aside — can be retrieved |
+
+Status advances are logged to the audit trail. Initial status is set at promotion time based on Layer 2 engagement (see table above).
 
 ### 6.3 Verb Data Structures (Events and Processes)
 
@@ -889,35 +922,46 @@ A **team** is the collection of roles that constitutes a vertical. Installing a 
 ```json
 {
   "teamID": "storyengine-fiction",
-  "teamName": "Fiction Writing Team",
-  "schemaVersion": "1.0",
+  "teamName": "StoryEngine Fiction Team",
+  "schemaVersion": "2.0",
   "vertical": "fiction",
   "roles": [
     {
-      "roleID": "dev-editor",
+      "roleID": "acquisitions-editor",
+      "name": "Acquisitions Editor",
+      "definitionPath": "roles/acquisitions-editor/ROLE.md",
+      "tier1Skills": [],
+      "tier2Skills": [],
+      "tier3Skills": ["starting-lineup"]
+    },
+    {
+      "roleID": "publisher",
+      "name": "Publisher",
+      "definitionPath": "roles/publisher/ROLE.md",
+      "tier1Skills": [],
+      "tier2Skills": [],
+      "tier3Skills": ["greenlight-review"]
+    },
+    {
+      "roleID": "developmental-editor",
       "name": "Developmental Editor",
-      "definitionPath": "roles/dev-editor/ROLE.md",
+      "definitionPath": "roles/developmental-editor/ROLE.md",
+      "tier1Skills": [],
       "tier2Skills": ["character-arc-checker", "conformance-reporter"],
       "tier3Skills": ["character-creation", "wound-intake", "beat-sheet", "scene-development"]
     },
     {
-      "roleID": "copy-editor",
-      "name": "Copy Editor",
-      "definitionPath": "roles/copy-editor/ROLE.md",
+      "roleID": "proofreader",
+      "name": "Proofreader",
+      "definitionPath": "roles/proofreader/ROLE.md",
+      "tier1Skills": [],
       "tier2Skills": ["timeline-validator", "continuity-checker", "thread-drift-detector"],
       "tier3Skills": ["voice-profiler"]
     },
     {
-      "roleID": "continuity-guard",
-      "name": "Continuity Guard",
-      "definitionPath": "roles/continuity-guard/ROLE.md",
-      "tier2Skills": ["continuity-checker"],
-      "tier3Skills": []
-    },
-    {
-      "roleID": "story-keeper",
-      "name": "Story Keeper",
-      "definitionPath": "roles/story-keeper/ROLE.md",
+      "roleID": "managing-editor",
+      "name": "Managing Editor",
+      "definitionPath": "roles/managing-editor/ROLE.md",
       "tier1Skills": ["session-init", "orphan-manager", "schema-migrator", "backup-restore", "project-export", "skill-installer", "routing", "scorecard-updater"],
       "tier2Skills": [],
       "tier3Skills": ["skill-designer"]
@@ -925,9 +969,9 @@ A **team** is the collection of roles that constitutes a vertical. Installing a 
   ],
   "routingRules": {
     "method": "keyword_match_then_clarify",
-    "fallbackRole": "dev-editor",
+    "fallbackRole": "acquisitions-editor",
     "ambiguityThreshold": 0.6,
-    "clarificationPrompt": "I can look at this from a structure perspective or a consistency perspective. Which would be more helpful?"
+    "clarificationPrompt": "Are you working on a new idea, or developing something already in progress?"
   }
 }
 ```
@@ -936,7 +980,7 @@ A **team** is the collection of roles that constitutes a vertical. Installing a 
 
 ### 13.6 Floor Management
 
-**Floor management** is the work of keeping the shop floor running — not producing Karen's story, but maintaining the infrastructure that makes production possible. Floor management is the Story Keeper role (in StoryEngine's team), executing Tier 1 system skills:
+**Floor management** is the work of keeping the shop floor running — not producing Karen's story, but maintaining the infrastructure that makes production possible. Floor management is the Managing Editor role (in StoryEngine's team), executing Tier 1 system skills. Karen never interacts with the Managing Editor directly — it runs behind the scenes.
 
 | Floor Management Task | Skill | When It Runs |
 |---|---|---|
@@ -1240,14 +1284,16 @@ This is the mobile impedance mismatch. The architecture minimizes it but cannot 
 ```
 iCloud Drive/
   StoryEngine/                              <- Product root (vertical-specific)
+    Inbox/                                  <- System-level inbox (no project assigned)
     .shopfloor/                             <- Hidden platform layer
       system-manifest.json                  <- Global registry: skills, roles, version
       team-manifest.json                    <- Team definition for this vertical
-      roles/                                <- Role definitions
-        dev-editor/ROLE.md
-        copy-editor/ROLE.md
-        continuity-guard/ROLE.md
-        story-keeper/ROLE.md
+      roles/                                <- Role definitions (five roles, locked 2026-04-14)
+        acquisitions-editor/ROLE.md         <- Particle → Starting Line-Up
+        publisher/ROLE.md                   <- Go / no-go decision
+        developmental-editor/ROLE.md        <- Post-greenlight: structure, character, arc
+        proofreader/ROLE.md                 <- Correctness, consistency, style — last mile
+        managing-editor/ROLE.md             <- Floor infrastructure (invisible to Karen)
       frameworks/                           <- Read-only framework templates
         three-act.json
         save-the-cat.json
@@ -1255,7 +1301,7 @@ iCloud Drive/
         story-grid.json
         heros-journey.json
       skills/
-        system/                             <- Tier 1 — floor management
+        system/                             <- Tier 1 — floor management (Managing Editor)
           session-init/SKILL.md
           orphan-manager/SKILL.md
           schema-migrator/SKILL.md
@@ -1271,24 +1317,29 @@ iCloud Drive/
           conformance-reporter/SKILL.md
           thread-drift-detector/SKILL.md
         creative/                           <- Tier 3 — production
+          starting-lineup/SKILL.md          <- First proof-of-concept (Acquisitions Editor)
+          greenlight-review/SKILL.md        <- Publisher decision skill
           character-creation/SKILL.md
-          conflict-management/SKILL.md
+          wound-intake/SKILL.md
+          beat-sheet/SKILL.md
           scene-development/SKILL.md
           voice-profiler/SKILL.md
-          skill-designer/SKILL.md           <- The meta-skill
+          skill-designer/SKILL.md           <- The meta-skill (Managing Editor)
         pending/                            <- Skills awaiting installation
           [any SKILL.md files drafted on mobile]
     My Novel/                               <- Karen's project
+      Inbox/                                <- Project-level inbox (unassigned captures)
       [content files — .md, Karen-visible]
       .shopfloor/
         manifest.json
         session-state.json
-        files/                              <- Per-file UUID metadata
+        files/                              <- Per-file UUID metadata (particle tags live here)
         object-model/                       <- Entity records + Role records + Scorecards
         audit/
           audit.jsonl
         snapshots/
     KILLSWITCH/                             <- Karen's second project
+      Inbox/
       [content files]
       .shopfloor/
         [same structure as above]
@@ -1410,53 +1461,56 @@ These are the places where performance, consistency, or usability will degrade f
 
 ## 20. Open Questions (The Remaining 30%)
 
-These are the decisions not yet resolved in this specification.
+These are the decisions not yet resolved in this specification. Closed questions are marked with their resolution date.
 
-| # | Question | Options | Priority |
-|---|---|---|---|
-| 1 | **Native app vs file system as app** | (a) File system is the app, Claude is the intelligence. (b) Native iOS/macOS app wraps the file system. | Foundational — everything else depends on this |
-| 2 | **Skill/Content Boundary — enforcement** | How does the system prevent Karen from accidentally writing into `.shopfloor/`? iOS/macOS hide it but a technical Karen could still find it. | High |
-| 3 | **Mobile skill runtime** | The iOS Shortcut bridge is a workaround. Is there a better path given the planned app? | High |
-| 4 | **Object model update trigger** | What triggers an update to, say, Character_Profile? (a) After every writing session. (b) On explicit skill invocation. (c) On conformance check. | High |
-| 5 | **Karen's Skill Extension path** | Exactly how does Karen create a new Tier 3 skill through conversation in a future version? What does the Skill Designer output, and where does it go? | Medium |
-| 6 | **Conformance Report frequency** | How often does the system run completeness checks? Always-on background? On demand? After each chapter? | Medium |
-| 7 | **Multi-project context** | Can Karen ask a question that spans two projects ("Does Echo's voice sound like my character in KILLSWITCH?")? | Medium |
-| 8 | **Skill Designer scope** | Does the Skill Designer output skills for Karen's use, Bill's use, or both? Different templates, different tiers. | Medium |
-| 9 | **Role creation by Karen** | In v2+, can Karen create entirely new roles through conversation? What guardrails prevent role proliferation? | Medium |
-| 10 | **Shared skills across roles** | The continuity-checker skill appears in both Copy Editor and Continuity Guard. Is shared ownership a problem? Should skills belong to exactly one role? | Medium |
-| 11 | **Audit log access** | Should Karen ever see audit log output, or is it purely for debugging? | Low |
-| 12 | **Snapshot retention policy** | How long are snapshots kept? How many versions? Who prunes them? | Low |
+| # | Question | Status | Resolution / Options | Priority |
+|---|---|---|---|---|
+| 1 | **Native app vs file system as app** | **CLOSED 2026-04-14** | Native iOS/macOS app. Filesystem with UI frontend. File I/O is always client-side. iCloud handles sync. Reference architecture: Notebooks App (Alfons Schmidt). | — |
+| 2 | **Skill/Content Boundary — enforcement** | Open | How does the system prevent Karen from accidentally writing into `.shopfloor/`? iOS/macOS hide it but a technical Karen could still find it. | High |
+| 3 | **Mobile skill runtime** | **CLOSED 2026-04-14** | Native app has full filesystem access on iOS. The Shortcut bridge workaround is obsolete. | — |
+| 4 | **Object model update trigger** | **CLOSED 2026-04-14** | Explicit skill invocation only. The object model is never updated automatically — only when Karen invokes a skill that produces structured output. | — |
+| 5 | **Karen's Skill Extension path** | Open | Exactly how does Karen create a new Tier 3 skill through conversation in a future version? What does the Skill Designer output, and where does it go? | Medium |
+| 6 | **Conformance Report frequency** | Open | How often does the system run completeness checks? Always-on background? On demand? After each chapter? | Medium |
+| 7 | **Multi-project context** | Open | Can Karen ask a question that spans two projects ("Does Echo's voice sound like my character in KILLSWITCH?")? | Medium |
+| 8 | **Skill Designer scope** | Open | Does the Skill Designer output skills for Karen's use, Bill's use, or both? Different templates, different tiers. | Medium |
+| 9 | **Role creation by Karen** | Open | In v2+, can Karen create entirely new roles through conversation? What guardrails prevent role proliferation? | Medium |
+| 10 | **Shared skills across roles** | **CLOSED 2026-04-14** | Continuity Guard eliminated. Continuity Guard's skills absorbed into Proofreader. Clean role boundaries — no shared skill ownership. | — |
+| 11 | **Audit log access** | Open | Should Karen ever see audit log output, or is it purely for debugging? | Low |
+| 12 | **Snapshot retention policy** | Open | How long are snapshots kept? How many versions? Who prunes them? | Low |
 
 ---
 
 ## 21. Handoff Notes for Claude Code
 
-This document is the full context for a Claude Code session. The following tasks are ready for implementation:
+This document is the full context for a Claude Code session. The following tasks are in order.
 
-**Immediate (v0.1 foundation):**
-- [ ] Define JSON schemas as formal templates for all 41 data structures (38 original + 3 Operations)
-- [ ] Build `manifest.json` schema with full field definitions
-- [ ] Build `session-state.json` schema
-- [ ] Build `team-manifest.json` schema
-- [ ] Write ROLE.md definitions for all four StoryEngine roles
-- [ ] Build session-init skill (Tier 1 — floor management)
-- [ ] Build orphan-manager skill (Tier 1 — floor management)
-- [ ] Build routing skill (Tier 1 — floor management)
-- [ ] Build scorecard-updater skill (Tier 1 — floor management)
-- [ ] Build project-export skill (Tier 1 — floor management)
-- [ ] Build character-creation skill (Tier 3 — first production skill proof-of-concept)
-- [ ] Build Skill Designer (meta-skill — requires its own spec first)
+**Current priority (in sequence):**
+- [ ] Write `Data Structures/Noun Data Structures/Starting_Lineup.md` — new schema for Swain Starting Line-Up artifact
+- [ ] Write five ROLE.md files:
+  - `Roles/acquisitions-editor/ROLE.md`
+  - `Roles/publisher/ROLE.md`
+  - `Roles/developmental-editor/ROLE.md`
+  - `Roles/proofreader/ROLE.md`
+  - `Roles/managing-editor/ROLE.md`
+- [ ] Generate `schema-index.json` from Data Structures/ — compressed type/field/ID-format index for Skill Designer
+- [ ] Generate `role-index.json` from Team Manifest — compressed role summary for Skill Designer
+- [ ] Write `Skills/creative/starting-lineup/SKILL.md` — first proof-of-concept skill (Acquisitions Editor, Tier 3)
+- [ ] Write `Skills/creative/skill-designer/SKILL.md` — the meta-skill (built last)
+
+**Architecture decisions locked as of 2026-04-14:**
+- Native iOS/macOS app (Question #1 closed)
+- Object model updates on explicit skill invocation only (Question #4 closed)
+- Mobile skill runtime = native app (Question #3 closed)
+- Five roles: acquisitions-editor, publisher, developmental-editor, proofreader, managing-editor (Question #10 closed — Continuity Guard eliminated)
+- Particle = tag on a file (isParticle in per-file metadata, not a standalone entity)
 
 **Before v1.0:**
+- [ ] Build all Tier 1 floor management skills (Managing Editor)
 - [ ] Build all Tier 2 quality control skills
-- [ ] Build schema-migrator skill
-- [ ] Build skill-installer skill (the iCloud pending/ -> active sync)
-- [ ] Build conformance-reporter skill
 - [ ] Implement bottleneck mitigations (Section 19) in priority order
-- [ ] Resolve Open Question #1 (native app vs file system as app)
 
 **Reference architecture:** Notebooks App by Alfons Schmidt. Study its metadata conventions. Adopt the structure, not the placement or the format.
 
 ---
 
-*v0.6-0.7: Synthesized from design conversation on 2026-04-11. v0.8: Design flaw audit — added write-back architecture, Particle entity, dual identity system, rename detection, active entity resolution, UUID-based metadata naming. v0.9: Format migration from plist (XML) to JSON throughout. Added content-file-to-object-model relationship, session state, skill execution model, project-export skill, JSONL audit trail. v1.0 (2026-04-12): Platform renamed from StoryEngine to ShopFloor (vertical-agnostic platform layer). Added organizational architecture: Roles, Stations, Teams (Section 13). Added Quality Control: Scorecards, Outcome Tracking, Feedback Loop (Section 14). Added Bottleneck Analysis (Section 19). Added Operations data structures (Role_Record, Scorecard, Team_Manifest). Added routing skill and scorecard-updater skill to floor management. Updated all paths from .storyengine/ to .shopfloor/. Replaced StoryEngine references with ShopFloor for platform-level concepts. StoryEngine retained as the fiction vertical name. Added Design Principle 2.8 (Organizational Clarity). Next: Skill Designer Spec.*
+*v0.6-0.7: Synthesized from design conversation on 2026-04-11. v0.8: Design flaw audit — added write-back architecture, Particle entity, dual identity system, rename detection, active entity resolution, UUID-based metadata naming. v0.9: Format migration from plist (XML) to JSON throughout. Added content-file-to-object-model relationship, session state, skill execution model, project-export skill, JSONL audit trail. v1.0 (2026-04-12): Platform renamed from StoryEngine to ShopFloor (vertical-agnostic platform layer). Added organizational architecture: Roles, Stations, Teams (Section 13). Added Quality Control: Scorecards, Outcome Tracking, Feedback Loop (Section 14). Added Bottleneck Analysis (Section 19). Added Operations data structures (Role_Record, Scorecard, Team_Manifest). Added routing skill and scorecard-updater skill to floor management. Updated all paths from .storyengine/ to .shopfloor/. Replaced StoryEngine references with ShopFloor for platform-level concepts. StoryEngine retained as the fiction vertical name. Added Design Principle 2.8 (Organizational Clarity). v1.1 (2026-04-14): Particle redesigned — particle is now a tag on a file (isParticle: true in per-file metadata), not a standalone object-model entity. PRT IDs eliminated. Status lifecycle expanded to raw → considered → developing → placed (shelved as lateral exit). Five-role team structure locked: acquisitions-editor, publisher, developmental-editor, proofreader, managing-editor. Story Keeper renamed Managing Editor. Continuity Guard eliminated, absorbed into Proofreader. Section 6.2.1 rewritten. Section 13.5 team-manifest.json updated to five roles. Section 13.6 updated to Managing Editor. Section 17 layout updated with Inbox directories and five role directories. Section 20 open questions #1, #3, #4, #10 closed. Section 21 handoff notes updated to current priority order.*

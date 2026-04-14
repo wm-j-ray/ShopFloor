@@ -1,7 +1,7 @@
 ---
-schema_type: particle
+schema_type: particle_metadata
 category: noun
-template_version: "1.1"
+template_version: "2.0"
 profile_version: ""
 date_instantiated: ""
 status: template
@@ -10,103 +10,121 @@ linked_schemas:
   - Scene_Container
   - Wound_Profile
   - Location_Profile
+  - Starting_Lineup
 narrative_threads: []
 ---
 
-# Particle
+# Particle (Per-File Metadata Fields)
 
-> **Purpose:** The atomic unit of raw creative material. A particle is anything captured before its narrative function is known — an overheard line, a film moment, a passage from a book, a personal observation, a scene fragment, a craft note. It is the entry point to the system. No classification required at capture time.
+> **What a particle is:** A particle is a tag on a file. Not a separate data structure. Not a JSON record in `object-model/`. When Karen says "this might be something," ShopFloor sets `isParticle: true` in the file's existing per-file metadata record in `.shopfloor/files/[UUID].json`. The file itself stays where Karen put it — her inbox notebook, her cybercrime notebook, wherever. ShopFloor doesn't move it or copy it. It just notes: *this file has been elevated.*
 >
-> **Capture philosophy:** Capture is instant. Classification is deferred. But the line between them is porous at the moment of capture — when Karen just found something and her mind is alive with why it matters. The capture sheet surfaces a note field and quick entity connections without requiring them. If she engages, the particle arrives enriched. If she doesn't, it saves in two taps and she moves on.
+> **"Show me my particles"** is a filtered view. Show all files where `isParticle: true`. A lens on existing files, not a separate data store.
 >
-> **Primary capture path:** iOS Share Sheet. Karen taps Share in any app — Safari, Photos, Diarium, Instagram, Reddit, a Shortcut, anything — selects ShopFloor, and she's done. The system auto-extracts title, source app, and URL. The capture sheet gives her the option to add a note or tap a character chip. Nothing is required.
+> **This is NOT a macOS tag.** Nothing to do with Finder colored labels. `isParticle` is a field in a hidden JSON file Karen never sees.
 >
-> **Instance naming:** Auto-assigned. System-managed. Writers never name particles manually.
+> **Particle fields live in** `.shopfloor/files/[UUID].json` — the per-file metadata record that already exists for every file. Particle enrichment is optional fields added to that record when Karen promotes a file.
+
+> **Instance naming:** No separate instance files. These fields are added to the existing `[UUID].json` record in `.shopfloor/files/`.
 
 ---
 
-## Capture
+## Particle Promotion Fields
 
-| Field | Value |
-|-------|-------|
-| Particle ID | |
-| Capture Date / Time | |
-| Capture Method | `share_sheet` / `direct` / `import` / `sync` / `manual` |
-| Source App | (auto-populated for `share_sheet` captures — e.g., `Safari`, `Photos`, `Diarium`, `Reddit`, `Bear`, `Shortcuts`. Open string — any app, no schema migration. Empty for `direct` entries.) |
-| Source URL | (optional — link to article, film clip, IMDB entry, etc.) |
-| Source Type | `own_writing` / `collected_quote` / `film_reference` / `craft_note` / `overheard` / `observed_scene` / `lyric_or_poetry` / `unknown` |
+> These fields are added to the per-file metadata record when `isParticle` is set to `true`. All are optional except `isParticle` and `particleStatus`.
 
----
-
-## Content
-
+```json
+{
+  "uuid": "8F3A2C1D...",
+  "currentFilename": "swatting-nyc.md",
+  "relativePath": "Cybercrime/swatting-nyc.md",
+  "isParticle": true,
+  "particleStatus": "raw",
+  "resonanceNote": "",
+  "captureMethod": "share_sheet",
+  "sourceApp": "Safari",
+  "sourceURL": "",
+  "sourceType": "",
+  "linkedEntities": [],
+  "linkedStartingLineup": "",
+  "lastSurfaced": "",
+  "surfaceCount": 0
+}
 ```
-[Raw text of the particle — exactly as captured, unedited]
-```
+
+### Field Definitions
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `isParticle` | boolean | yes | The tag. `true` means this file has been elevated to particle status |
+| `particleStatus` | string (enum) | yes | Current status in the particle lifecycle (see below) |
+| `resonanceNote` | string | no | Karen's note added at the moment of promotion — while the recognition is sharp. The *why* of the promotion, not the *what* |
+| `captureMethod` | string (enum) | no | How the content originally entered the system |
+| `sourceApp` | string (open) | no | App that sent the content. Auto-populated for `share_sheet` captures. Never hardcoded to known apps — any app, any future app |
+| `sourceURL` | string | no | Link to original article, clip, IMDB entry, etc. |
+| `sourceType` | string (enum) | no | Category of source material |
+| `linkedEntities` | array | no | Entity IDs linked to this particle (e.g., `["CHR-001", "WND-002"]`) |
+| `linkedStartingLineup` | string | no | ID of the Starting Line-Up this particle contributed to, once placed |
+| `lastSurfaced` | string (date) | no | Last time the system returned this particle in a query result |
+| `surfaceCount` | integer | no | Number of times this particle has appeared in resurfacing results |
 
 ---
 
-## Capture Note
+## Capture Method Enum (closed)
 
-> Karen's note added at the moment of capture — while the recognition is still sharp. This is distinct from later classification notes. It records the *why* of the capture, not the *what*.
+| Value | Meaning |
+|-------|---------|
+| `share_sheet` | iOS Share Sheet from any external app — primary mobile capture path |
+| `direct` | Typed or spoken directly in-app by Karen |
+| `import` | Pulled from an external data source via structured extract (batch) |
+| `sync` | Ingested from a connected vault or note system (ongoing) |
+| `manual` | Pasted, dragged in, or file-dropped via Files picker |
+| `promoted` | File already existed in Karen's notebooks; she elevated it to particle status |
 
-| Field | Value |
-|-------|-------|
-| Note at Capture | (what Karen typed in the capture sheet, if anything) |
-| Pre-assigned Entity | (entity ID tapped in the quick entity chips at capture time, if any — e.g., `CHR-001`) |
-| Pre-assigned Entity Type | (`character` / `scene` / `wound` / `location`) |
-
-> **Status note:** If Karen added a note or pre-assigned an entity at capture, this particle is saved as `considered`, not `raw`. She's already engaged. The system respects that.
-
----
-
-## Status
-
-| Field | Value |
-|-------|-------|
-| Status | `raw` / `considered` / `placed` |
-| Last Surfaced | (date the system last returned this particle in a query result) |
-| Surface Count | (how many times this particle has appeared in resurfacing results) |
-
-> **How initial status is set at save:**
-> - Nothing added in capture sheet → `raw`
-> - Note added at capture → `considered`
-> - Entity pre-assigned at capture → `considered`
->
-> **Status transitions:** `raw → considered → placed` (forward only in v1). Tap the status dot to advance. No form. No confirmation. Status advances are logged to the audit trail.
+`sourceApp` is an open string, never part of the enum. Never hardcode app names.
 
 ---
 
-## Story Connections
+## Source Type Enum (open — AI infers, Karen can override)
 
-> Populated by the system as the particle is classified. All fields optional. A particle may remain `raw` indefinitely with no connections. Pre-assigned entities from capture time appear here automatically.
-
-| Field | Value |
-|-------|-------|
-| Linked Character(s) | (link to [[Character_Profile]] instances) |
-| Linked Scene(s) | (link to [[Scene_Container]] instances) |
-| Linked Wound(s) | (link to [[Wound_Profile]] instances) |
-| Linked Location(s) | (link to [[Location_Profile]] instances) |
-| Act | `1` / `2` / `3` / (other) |
+`own_writing` / `collected_quote` / `film_reference` / `craft_note` / `overheard` / `observed_scene` / `lyric_or_poetry` / `unknown`
 
 ---
 
-## AI Classification
+## Status Lifecycle
 
-> Generated by the system. Not entered by the writer. AI infers source type and narrative function if not already set at capture time.
+`raw → considered → developing → placed`
 
-| Field | Value |
-|-------|-------|
-| Inferred Source Type | (AI-inferred if not set at capture) |
-| Inferred Narrative Function | (e.g., *interior weight* / *scene texture* / *ghost of the past* / *craft model*) |
-| Inferred Entity Connections | (entity IDs the AI suggests, pending Karen's review — distinct from pre-assigned entities) |
-| Embedding Status | `pending` / `complete` / `failed` |
-| Embedding Model | |
+`shelved` is a lateral exit from any state except `placed`.
+
+| Status | Meaning |
+|--------|---------|
+| `raw` | Promoted but not yet engaged with |
+| `considered` | Karen engaged — resonance note added, or entity pre-assigned at capture |
+| `developing` | Karen is actively working this toward a Starting Line-Up |
+| `placed` | Incorporated into an active project (linked to a Starting Line-Up or greenlit work) |
+| `shelved` | Intentionally set aside — can be retrieved at any time |
+
+**How initial status is set:**
+
+| Engagement at promotion | Status at save |
+|------------------------|----------------|
+| Nothing — promoted without engagement | `raw` |
+| Resonance note added | `considered` |
+| Entity pre-assigned | `considered` |
+| Both note and entity | `considered` |
+
+Status advances are logged to the audit trail. Tap the status indicator to advance.
 
 ---
 
-## Conformance Notes
+## File Protection
 
-> Populated when this particle is surfaced in a query. What the particle does for the scene, character, or structural problem it was matched to.
+Karen is fully protected when she renames or moves files. The UUID never changes. The per-file metadata record updates `currentFilename` and `relativePath` automatically via the self-healing rename detection system. The particle tag follows the file silently.
 
-*No conformance notes yet.*
+No Karen action is required. No particle is ever lost to a rename or move.
+
+---
+
+## Notes
+
+*No notes yet.*

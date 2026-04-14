@@ -1,7 +1,7 @@
 ---
 schema_type: team_manifest
 category: operations
-template_version: "1.0"
+template_version: "2.0"
 profile_version: ""
 date_instantiated: ""
 status: template
@@ -15,7 +15,7 @@ narrative_threads: []
 
 > **Purpose:** Defines the team installed on this ShopFloor instance — which roles are active, which skills they own, and how incoming requests are routed to the appropriate station. The team manifest is the floor plan. It is the single document that makes the system vertical-specific.
 >
-> **Instance naming:** `Team_Manifest.json` (singleton per installation). Lives at the system root in `.shopfloor/team-manifest.json`.
+> **Instance naming:** `team-manifest.json` (singleton per installation). Lives at the system root in `.shopfloor/team-manifest.json`.
 
 > 🔧 **OPERATIONS — Floor Configuration.** Written once when a vertical is installed. Updated when roles or skills are added, removed, or reassigned. Read by session-init and routing skills at every session start.
 
@@ -26,7 +26,7 @@ narrative_threads: []
 | Field | Value |
 |-------|-------|
 | Team ID | (e.g., `storyengine-fiction`) |
-| Team Name | (e.g., `Fiction Writing Team`) |
+| Team Name | (e.g., `StoryEngine Fiction Team`) |
 | Vertical | (e.g., `fiction` / `legal` / `screenwriting` / `academic`) |
 | Installed Date | |
 | Last Modified | |
@@ -35,20 +35,29 @@ narrative_threads: []
 
 ## Roles
 
-> One entry per role on this team. Each role has a plain-English name, a path to its definition file, and a list of skills organized by tier.
+> Five roles constitute the StoryEngine default team. Each maps to a real-world publishing function Karen already understands. The pipeline flows left to right: idea → pitch → greenlight → development → polish.
 
 | Role ID | Role Name | Definition Path | Tier 1 Skills | Tier 2 Skills | Tier 3 Skills |
 |---------|-----------|----------------|---------------|---------------|---------------|
 | | | | | | |
 
-### StoryEngine Default Team
+### StoryEngine Default Team (Locked 2026-04-14)
 
 | Role ID | Role Name | Definition Path | Tier 1 Skills | Tier 2 Skills | Tier 3 Skills |
 |---------|-----------|----------------|---------------|---------------|---------------|
-| dev-editor | Developmental Editor | roles/dev-editor/ROLE.md | — | character-arc-checker, conformance-reporter | character-creation, wound-intake, beat-sheet, scene-development |
-| copy-editor | Copy Editor | roles/copy-editor/ROLE.md | — | timeline-validator, continuity-checker, thread-drift-detector | voice-profiler |
-| continuity-guard | Continuity Guard | roles/continuity-guard/ROLE.md | — | continuity-checker | — |
-| story-keeper | Story Keeper | roles/story-keeper/ROLE.md | session-init, orphan-manager, schema-migrator, backup-restore, project-export, skill-installer, routing, scorecard-updater | — | skill-designer |
+| acquisitions-editor | Acquisitions Editor | roles/acquisitions-editor/ROLE.md | — | — | starting-lineup |
+| publisher | Publisher | roles/publisher/ROLE.md | — | — | greenlight-review |
+| developmental-editor | Developmental Editor | roles/developmental-editor/ROLE.md | — | character-arc-checker, conformance-reporter | character-creation, wound-intake, beat-sheet, scene-development |
+| proofreader | Proofreader | roles/proofreader/ROLE.md | — | timeline-validator, continuity-checker, thread-drift-detector | voice-profiler |
+| managing-editor | Managing Editor | roles/managing-editor/ROLE.md | session-init, orphan-manager, schema-migrator, backup-restore, project-export, skill-installer, routing, scorecard-updater | — | skill-designer |
+
+**The pipeline:**
+```
+Particle → Starting Line-Up → Greenlight → Development → Polish
+           Acquisitions Ed.    Publisher    Dev. Editor   Proofreader
+```
+
+**Managing Editor** runs floor infrastructure (Tier 1 skills). Invisible to Karen.
 
 ---
 
@@ -57,7 +66,7 @@ narrative_threads: []
 | Field | Value |
 |-------|-------|
 | Routing Method | `keyword_match_then_clarify` |
-| Fallback Role | (role ID that handles requests when no clear match — e.g., `dev-editor`) |
+| Fallback Role | (role ID that handles requests when no clear match — e.g., `acquisitions-editor` pre-greenlight, `developmental-editor` post-greenlight) |
 | Ambiguity Threshold | (0.0–1.0 — when multiple roles match above this score, ask Karen to clarify) |
 | Clarification Prompt | (the question asked when routing is ambiguous) |
 
@@ -65,20 +74,16 @@ narrative_threads: []
 
 ## Shared Skills
 
-> Skills that appear in more than one role's skill list. This section documents the intentional overlap and explains why.
+> Skills that appear in more than one role's skill list. This section documents intentional overlap.
 
 | Skill ID | Roles | Rationale |
 |----------|-------|-----------|
 | | | |
 
-### StoryEngine Default Shared Skills
-
-| Skill ID | Roles | Rationale |
-|----------|-------|-----------|
-| continuity-checker | copy-editor, continuity-guard | Copy Editor catches continuity errors during prose review. Continuity Guard runs dedicated continuity audits. Different contexts, same skill. |
+*(No shared skills in current StoryEngine default team — role boundaries are clean.)*
 
 ---
 
 ## Notes
 
-*No notes yet.*
+Role structure locked 2026-04-14. Five real-world publishing roles replace the prior four generic roles (dev-editor, copy-editor, continuity-guard, story-keeper). Key change: Acquisitions Editor and Publisher are new roles not previously in the team. Continuity Guard eliminated — its responsibilities absorbed into Proofreader. Story Keeper renamed Managing Editor to sound like a real person with a real job.
