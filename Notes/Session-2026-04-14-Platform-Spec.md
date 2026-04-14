@@ -177,17 +177,33 @@ The lesson: when a reviewer score regresses, don't let it slide. Fix the underly
 
 ---
 
+## Delivered This Session (continued after notes were written)
+
+Three additional artifacts completed in the same session:
+
+**`Roles/foreman/ROLE.md`** (new, commit `2965928`)
+Platform Foreman role. 4 Tier 1 skills: vertical-registration, session-init, context-index-generator, halt-monitor. Full error taxonomy table. Knows nothing about fiction. Runs before anything else. If it halts, the session ends.
+
+**`Roles/managing-editor/ROLE.md`** (rewritten, commit `2965928`)
+Stripped all platform-level responsibilities and skills (session-init, orphan-manager, schema-migrator, backup-restore). Now scoped to StoryEngine creative floor only: routing, scorecard-updater, skill-installer, project-export, skill-designer. Pipeline position updated to show Foreman-first chain.
+
+**`Skills/system/vertical-registration/SKILL.md`** (new, commit `32d22c9`)
+Foreman's first Tier 1 skill. 237 lines. Establishes the Tier 1 SKILL.md pattern: execution flow (not conversation flow), `requires_ai: false`, no Karen-facing output. 13-step execution flow. All-or-nothing registry writes on Fail. Documents platform.halt sequencing (halt-monitor fires first in session-init, so this skill never runs in a halted session).
+
+---
+
 ## What's Next (from this session)
 
 In order:
 
-1. Write `Notes/Session-2026-04-14-Platform-Spec.md` ← this file
-2. Write `Roles/foreman/ROLE.md` — platform Foreman role
-3. Write `Skills/system/vertical-registration/SKILL.md` — Foreman's first Tier 1 skill
-4. Write `VERTICAL.md` at repo root — StoryEngine's registration declaration
-5. Write StoryEngine Spec — all §18.2 vertical concepts from Platform Spec (fiction domain, five roles, entity types, particle extensions)
-6. Update existing 5 ROLE.md files — remove platform language from Managing Editor; audit others for seam violations
-7. Add `vertical: storyengine` frontmatter to all 49 fiction-domain schema templates
+1. ~~Write `Notes/Session-2026-04-14-Platform-Spec.md`~~ ✓ this file
+2. ~~Write `Roles/foreman/ROLE.md`~~ ✓ Complete (2026-04-14)
+3. ~~Write `Skills/system/vertical-registration/SKILL.md`~~ ✓ Complete (2026-04-14)
+4. ~~Update `Roles/managing-editor/ROLE.md`~~ ✓ Complete (2026-04-14, platform language stripped)
+5. Write `VERTICAL.md` at repo root — StoryEngine's registration declaration (entity type prefixes need deliberate design pass first)
+6. Write StoryEngine Spec — all §18.2 vertical concepts from Platform Spec (fiction domain, five roles, entity types, particle extensions)
+7. Audit remaining 4 ROLE.md files for seam violations
+8. Add `vertical: storyengine` frontmatter to all 49 fiction-domain schema templates
 
 ---
 
