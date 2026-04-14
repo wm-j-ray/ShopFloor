@@ -1,7 +1,7 @@
 ---
 schema_type: starting_lineup
 category: noun
-template_version: "1.0"
+template_version: "1.1"
 profile_version: ""
 date_instantiated: ""
 status: template
@@ -14,79 +14,105 @@ narrative_threads: []
 
 > **Purpose:** The pre-greenlight artifact developed by the Acquisitions Editor from one or more particles. Based on Dwight Swain's "Starting Line-Up" concept from *Techniques of the Selling Writer*. Five elements forced into two sentences reveal whether an idea has the structural bones to become a story worth writing.
 >
-> **Who creates it:** The Acquisitions Editor role. Karen brings a particle. The Acquisitions Editor asks questions, extracts or proposes the five elements, and drafts the two-sentence form. Karen refines. When she's satisfied, she pitches it to the Publisher for greenlight.
+> **Who creates it:** The Acquisitions Editor role. Karen brings a particle. The Acquisitions Editor asks questions, surfaces the five Swain elements through conversation, and drafts the two-sentence form. Karen refines. When she's satisfied, she pitches it to the Publisher for greenlight.
 >
-> **Instance naming:** When creating an instance, save as `[ID]_Title.md`, set `profile_version` and `date_instantiated`.
+> **Instance location:** `.shopfloor/object-model/Starting_Lineup_[ID].json`
+>
+> **Instance naming:** `SLU-NNN` (e.g., `SLU-001`). Sequential per project.
 
 ---
 
-## Identity
+## JSON Schema
 
-| Field | Value |
-|-------|-------|
-| Starting Line-Up ID | (e.g., `SLU-001`) |
-| Working Title | |
-| Date Created | |
-| Status | `draft` / `refined` / `pitched` / `greenlit` / `rejected` / `shelved` |
-| Source Particles | (UUID(s) of the particle(s) this grew from) |
+```json
+{
+  "startingLineupID": "SLU-001",
+  "working_title": "",
+  "date_created": "",
+  "status": "draft",
+  "source_particle_uuids": [],
+  "swain_elements": {
+    "focal_character": null,
+    "situation": null,
+    "objective": null,
+    "opponent": null,
+    "threatening_disaster": null
+  },
+  "statement": null,
+  "question": null,
+  "ae_notes": "",
+  "publisher_decision": null,
+  "publisher_decision_date": null,
+  "publisher_note": null,
+  "linked_project": null
+}
+```
 
 ---
 
-## The Five Elements (Swain)
+## Field Definitions
 
-> These are the inputs. Every field must be filled before the two-sentence output is valid. If any element is missing, the idea isn't ready to pitch.
+| Field | Type | Written by | Description |
+|-------|------|-----------|-------------|
+| `startingLineupID` | string | AE (on create) | Sequential ID, format `SLU-NNN`. Stable — never changes |
+| `working_title` | string | AE | Karen's working title for the idea |
+| `date_created` | string (ISO 8601) | AE | When the AE created this record |
+| `status` | string (enum) | AE, Publisher | Current state — see lifecycle below |
+| `source_particle_uuids` | array of strings | AE | UUID(s) of the particle(s) this grew from |
+| `swain_elements` | object | AE | The five Swain elements — each null until surfaced in intake |
+| `statement` | string or null | AE | The Statement sentence — null until all five elements are confirmed |
+| `question` | string or null | AE | The Question sentence — null until all five elements are confirmed |
+| `ae_notes` | string | AE | Acquisitions Editor's working notes — not shown to Karen directly, but available on request |
+| `publisher_decision` | string (enum) or null | Publisher | `greenlit` / `rejected` / `deferred` / `revise-and-resubmit`. Null until pitched |
+| `publisher_decision_date` | string (ISO 8601) or null | Publisher | Date of Publisher decision |
+| `publisher_note` | string or null | Publisher | Publisher's specific feedback or rationale |
+| `linked_project` | string or null | Publisher | Project UUID — populated when greenlit |
 
-| Element | Definition | Value |
-|---------|-----------|-------|
-| **Focal Character** | The single character the story belongs to — who Karen follows through the whole arc | |
-| **Situation** | The state of affairs at the story's opening — what world the focal character inhabits | |
-| **Objective** | What the focal character is trying to accomplish — concrete, achievable, urgent | |
-| **Opponent** | The force (person, institution, nature, inner demon) that blocks the objective | |
-| **Threatening Disaster** | What happens if the focal character fails — the stakes | |
+**Write access:** AE writes all fields except `publisher_decision`, `publisher_decision_date`, `publisher_note`, `linked_project`. Publisher writes only those four. Neither touches the other's fields.
+
+---
+
+## Swain Elements Object
+
+All five fields are `null` until surfaced by the AE during intake. The AE withholds `statement` and `question` generation until all five are non-null — even if Karen explicitly requests the output early.
+
+| Field | Swain Element | Definition |
+|-------|--------------|-----------|
+| `focal_character` | Focal Character | The single character the story belongs to — who Karen follows through the whole arc. Must be a specific person, not a type |
+| `situation` | Situation | The state of affairs at the story's opening — what world the focal character inhabits, what's already unstable or wrong |
+| `objective` | Objective | What the focal character is trying to accomplish — must be concrete, completable, and urgent. Flag if abstract |
+| `opponent` | Opponent | The force actively working against the objective — must have agency and make decisions. Flag if passive |
+| `threatening_disaster` | Threatening Disaster | What specifically happens if the focal character fails — must be concrete and worse than the current situation. The hardest slot |
 
 ---
 
 ## The Two-Sentence Output
 
-> Generated from the five elements. This is what Karen pitches to the Publisher.
+Generated from the five elements once all are confirmed. This is what Karen pitches to the Publisher.
 
 **Statement:**
-> [Focal Character] in [Situation] attempts to [Objective].
+> [Focal Character] must [Objective] despite [Opponent] or face [Threatening Disaster].
 
 **Question:**
-> But can they achieve [Objective] against [Opponent] before [Threatening Disaster] occurs?
+> Will [Focal Character] [achieve Objective] before [Threatening Disaster] occurs?
 
 ---
 
-## Acquisitions Editor Notes
+## Status Lifecycle
 
-> The Acquisitions Editor's working notes during development — not for Karen's direct view, but available to her on request. Records what was tried, what was discarded, why elements were chosen.
+`draft → refined → pitched → greenlit / rejected / deferred`
 
-*No notes yet.*
+`revise-and-resubmit` is a transient event (not a resting state) — it writes `pipeline_state` back to `draft` in the Project record. `shelved` is a lateral exit from any state.
 
----
-
-## Publisher Decision
-
-> Populated by the Publisher role after Karen pitches.
-
-| Field | Value |
-|-------|-------|
-| Decision | `greenlit` / `rejected` / `deferred` / `revise-and-resubmit` |
-| Decision Date | |
-| Publisher Note | |
-
----
-
-## Linked Project
-
-> Populated when greenlit — links to the project this Starting Line-Up became.
-
-| Field | Value |
-|-------|-------|
-| Project Name | |
-| Project Folder Path | |
-| Greenlit Date | |
+| Status | Meaning | Set by |
+|--------|---------|--------|
+| `draft` | AE is actively developing — Swain slots may be incomplete | AE (on create) |
+| `refined` | All five Swain elements confirmed, output generated, Karen satisfied | AE (on Karen's acceptance) |
+| `pitched` | Karen has submitted to the Publisher. Awaiting decision | AE (when Karen pitches) |
+| `greenlit` | Publisher approved | Publisher |
+| `rejected` | Publisher declined | Publisher |
+| `deferred` | Publisher or Karen chose not to decide right now | Publisher |
+| `shelved` | Intentionally set aside | AE or Publisher |
 
 ---
 

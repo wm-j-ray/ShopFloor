@@ -87,3 +87,20 @@ Particle → Starting Line-Up → Greenlight → Development → Polish
 ## Notes
 
 Role structure locked 2026-04-14. Five real-world publishing roles replace the prior four generic roles (dev-editor, copy-editor, continuity-guard, story-keeper). Key change: Acquisitions Editor and Publisher are new roles not previously in the team. Continuity Guard eliminated — its responsibilities absorbed into Proofreader. Story Keeper renamed Managing Editor to sound like a real person with a real job.
+
+---
+
+## Relationship to system-manifest.json
+
+`team-manifest.json` is team configuration — which roles are installed, their skills, routing rules. It is relatively static after installation.
+
+`system-manifest.json` is runtime platform state and preferences. It lives alongside `team-manifest.json` at `.shopfloor/system-manifest.json`. It holds:
+
+- `active_project_count` — count of projects with `pipeline_state: greenlit`. Maintained by scorecard-updater on greenlight (increment) and shelved/archived (decrement). Read by the Publisher's capacity gate to decide whether to ask Karen about her current workload.
+- `quality_control` — evaluation thresholds:
+  - `warranty_target` — number of invocations before a skill graduates from warranty mode (default: 10)
+  - `modification_threshold` — modification rate that triggers a performance flag (default: 0.40)
+  - `publisher_warranty_greenlight_max` — if Publisher greenlights more than this fraction in its first N pitches, surface a review flag to Bill (default: 0.80)
+  - `active_evaluation_interval` — in active evaluation mode, how often to prompt Karen for feedback (default: every 3rd invocation)
+
+`system-manifest.json` does not have a schema template yet — this is a pending gap. Until that schema is written, treat the fields above as the authoritative list.

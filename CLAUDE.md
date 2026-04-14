@@ -89,30 +89,35 @@ The inbox notebook is a first-class concept — where captures land when Karen d
 
 ## Current Status (2026-04-14)
 
-Design phase. No code. Two foundational specs complete. Sessions documented in Notes/.
+Design phase. No code. Two foundational specs complete. Spec cleanup complete. Sessions documented in Notes/.
 
 | Document | Path | Status |
 |----------|------|--------|
-| ShopFloor Storage Spec v1.0 | `Design Documents/ShopFloor Storage Spec.md` | Locked (needs role + particle updates) |
+| ShopFloor Storage Spec v1.0 | `Design Documents/ShopFloor Storage Spec.md` | Updated 2026-04-14 |
 | Skill Designer Spec v1.0 | `Design Documents/Skill Designer Spec.md` | Locked |
 | April 9 Office Hours | `Notes/Session-2026-04-09-Office-Hours.md` | Recovered and saved |
 | April 14 Design Session | `Notes/Session-2026-04-14-Design-Session.md` | Complete |
 | April 14 Roles Design | `Notes/Session-2026-04-14-Roles-Design.md` | Complete |
+| April 14 Skill Designer | `Notes/Session-2026-04-14-Skill-Designer.md` | Complete |
 
 46 data structure schema templates live in `Data Structures/`.
 5 ROLE.md files in `Roles/` (locked 2026-04-14).
-1 proof-of-concept SKILL.md: `Skills/creative/starting-lineup/SKILL.md` (Tier 3, AE intake).
+2 SKILL.md files: `starting-lineup` (AE intake, Tier 3), `skill-designer` (ME meta-skill, Tier 3).
+3 index files in `.shopfloor/`: `schema-index.json`, `role-index.json`, `skill-registry.json`.
 
 ## What's Next (in order)
 
-1. ~~Update Particle.md~~ — pending (particle-as-tag model not yet reflected)
-2. ~~Update Team_Manifest.md~~ — pending (five new roles not yet reflected)
-3. ~~Update ShopFloor Storage Spec~~ — pending (particle, roles, resolved open questions)
+1. ~~Update Particle.md~~ ✓ Already correct (particle-as-tag model was reflected)
+2. ~~Update Team_Manifest.md~~ ✓ Already correct (five roles already present; system-manifest note added)
+3. ~~Update ShopFloor Storage Spec~~ ✓ Complete (dir tree, particle table, open questions, handoff — 2026-04-14)
 4. ~~Write five ROLE.md files~~ ✓ Complete (locked 2026-04-14)
-5. ~~Create Starting_Lineup.md schema~~ — pending (schema exists but needs review against SKILL.md)
+5. ~~Create Starting_Lineup.md schema~~ ✓ Complete (v1.1 with JSON schema, reconciled with SKILL.md — 2026-04-14)
 6. ~~Generate `schema-index.json` and `role-index.json`~~ ✓ Complete (`.shopfloor/`, 2026-04-14)
 7. ~~Write first SKILL.md~~ ✓ Complete (`Skills/creative/starting-lineup/SKILL.md`, 2026-04-14)
 8. ~~Write `Skills/creative/skill-designer/SKILL.md`~~ ✓ Complete (Tier 3, Managing Editor, 2026-04-14)
+9. **Write `System_Manifest.md` schema template** — `active_project_count`, `quality_control` thresholds
+10. **Add `writable_by` field to all 46 data structure schema templates**
+11. **Write `Skills/creative/greenlight-review/SKILL.md`** — Publisher go/no-go decision (Tier 3)
 
 ## Session Protocol (Mandatory — Established 2026-04-14)
 
@@ -128,16 +133,20 @@ Design phase. No code. Two foundational specs complete. Sessions documented in N
 - Hidden dir = `.shopfloor/`. Product root = `StoryEngine/` in iCloud Drive.
 - **Native iOS/macOS app.** Filesystem with UI frontend. NOT a web app.
 - **Particle = tag on a file.** NOT a separate data structure. `isParticle: true` in per-file metadata.
-- Capture method enum: `share_sheet / direct / import / sync / manual` (closed).
+- Capture method enum: `share_sheet / direct / import / sync / manual / promoted` (closed).
+  `promoted` = file already existed in Karen's notebooks; she elevated it to particle status.
   Source app = open string auto-populated from Share Sheet metadata. Never hardcode app names.
-- `note_at_capture` is distinct from later classification notes — captures the "why" at the resonance moment.
+- The `resonanceNote` field captures Karen's "why" at the moment of particle promotion — distinct
+  from later classification notes. Field name is `resonanceNote` in all schemas and specs.
 - Skill evaluation has three modes: `warranty` (first N uses, default 10), `active` (prompt
   every N uses, default 3rd), `passive` (observe only). Defaults live in `system-manifest.json`
   under `quality_control`.
 - `SKILL_FEEDBACK` events carry a `karensNote` field — free text, optional, most actionable signal.
 - The Skill Designer is Bottleneck 19.7 — most context-hungry operation. Mitigated by
-  `schema-index.json` and `role-index.json` compressed indexes (not yet generated).
+  `schema-index.json` and `role-index.json` compressed indexes (both generated 2026-04-14).
 - Object model updates triggered by explicit skill invocation only (Open Question #4 — CLOSED).
+- `writable_by` enforcement in Skill Designer: Warning for Bill (can override by fixing schema-index),
+  Fail (hard block) for Karen-authored skills. Overrides resolve at schema-index level, not per-skill.
 - No forms ever. Conversational UI throughout all three product tiers.
 
 ## Directory Structure
@@ -152,12 +161,12 @@ ShopFloor/
     Frameworks/             Three-Act, Save the Cat, Seven Point, Story Grid, Hero's Journey
     Operations/             Role_Record, Scorecard, Team_Manifest
   Assets/               — reference graphics (NotebooksApp study)
-  Skills/               — SKILL.md files (scaffolded, empty)
-    system/             — Tier 1: floor management
-    rules/              — Tier 2: quality control
-    creative/           — Tier 3: production
+  Skills/               — SKILL.md files
+    system/             — Tier 1: floor management (not yet written)
+    rules/              — Tier 2: quality control (not yet written)
+    creative/           — Tier 3: production (starting-lineup, skill-designer complete)
     pending/            — Karen-authored skills awaiting review
-  Roles/                — ROLE.md files (to be written)
+  Roles/                — ROLE.md files (all five complete, locked 2026-04-14)
   Notes/                — Session records (written at end of every session)
   App/                  — future Xcode/Swift project
 ```

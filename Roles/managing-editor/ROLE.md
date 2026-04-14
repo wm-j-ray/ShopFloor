@@ -53,7 +53,7 @@ The Managing Editor does not have Karen-facing routing triggers. This role is ne
 - When a skill file is found in pending/ (skill-installer)
 - Before every Karen message reaches another role (routing)
 
-When Bill needs to create a new skill, he invokes the Skill Designer directly — that is the one Managing Editor capability that surfaces above the waterline, and only for Bill, not Karen.
+When Bill needs to create a new skill, he invokes the Skill Designer directly. Karen can also reach it when she expresses something the system can't yet do ("I wish it could...") — routing intercepts that signal and the Skill Designer handles it in Karen mode, routing her draft to `pending/` for Bill's review. The Skill Designer is the one Managing Editor capability that surfaces above the waterline.
 
 ---
 

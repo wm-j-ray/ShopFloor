@@ -1,0 +1,50 @@
+{
+  "generated": "2026-04-14",
+  "schema_version": "1.0",
+  "description": "Registry of all installed and pending skills. Used by the Skill Designer to check for ID uniqueness and responsibility overlap. Used by session-init to load context fingerprints. Used by routing to resolve skill invocations.",
+  "skills": [
+
+    {
+      "skillId": "starting-lineup",
+      "skillName": "Starting Line-Up",
+      "version": "1.0",
+      "tier": 3,
+      "role": "acquisitions_editor",
+      "deploymentTargets": ["mobile", "desktop"],
+      "path": "Skills/creative/starting-lineup/SKILL.md",
+      "status": "active",
+      "purpose": "Develop a raw particle into a Starting Line-Up through Swain element intake — the pre-greenlight artifact pitched to the Publisher.",
+      "contextFingerprint": {
+        "objectModel": [
+          "Project:active",
+          "Particle:linked",
+          "Starting_Lineup:linked"
+        ],
+        "system": ["manifest", "session-state"]
+      },
+      "authoredBy": "bill",
+      "dateCreated": "2026-04-14",
+      "dateModified": "2026-04-14"
+    },
+
+    {
+      "skillId": "skill-designer",
+      "skillName": "Skill Designer",
+      "version": "1.0",
+      "tier": 3,
+      "role": "managing_editor",
+      "deploymentTargets": ["desktop"],
+      "path": "Skills/creative/skill-designer/SKILL.md",
+      "status": "active",
+      "purpose": "Build, validate, improve, and review SKILL.md files. Operates in four modes: new skill (Bill), new skill (Karen), improve existing, review pending.",
+      "contextFingerprint": {
+        "objectModel": [],
+        "system": ["manifest", "session-state", "schema_index", "role_index", "skill_registry"]
+      },
+      "authoredBy": "bill",
+      "dateCreated": "2026-04-14",
+      "dateModified": "2026-04-14"
+    }
+
+  ]
+}
