@@ -11,6 +11,8 @@ linked_schemas:
   - Wound_Profile
   - Scene_Container
   - Theme_Statement
+writable_by:
+  - developmental_editor
 narrative_threads: []
 ---
 

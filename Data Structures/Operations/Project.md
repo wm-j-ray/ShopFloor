@@ -9,6 +9,10 @@ linked_schemas:
   - Particle
   - Starting_Lineup
   - Scorecard
+writable_by:
+  - acquisitions_editor
+  - publisher
+  - managing_editor
 narrative_threads: []
 ---
 

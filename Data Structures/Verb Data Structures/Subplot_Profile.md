@@ -12,6 +12,8 @@ linked_schemas:
   - Arc_Beat_Sheet
   - Theme_Statement
   - Conflict_Tag
+writable_by:
+  - developmental_editor
 narrative_threads: []
 ---
 

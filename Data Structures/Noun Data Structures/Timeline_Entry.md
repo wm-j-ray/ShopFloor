@@ -10,6 +10,9 @@ linked_schemas:
   - Event_Profile
   - Scene_Container
   - Era_Profile
+writable_by:
+  - developmental_editor
+  - proofreader
 narrative_threads: []
 ---
 

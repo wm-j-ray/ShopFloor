@@ -11,6 +11,8 @@ linked_schemas:
   - Beat_Registry
   - Scene_Container
   - Arc_Beat_Sheet
+writable_by:
+  - developmental_editor
 narrative_threads: []
 ---
 

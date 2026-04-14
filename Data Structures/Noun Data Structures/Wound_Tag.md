@@ -8,6 +8,8 @@ status: template
 linked_schemas:
   - Wound_Profile
   - Character_Profile
+writable_by:
+  - developmental_editor
 narrative_threads: []
 ---
 

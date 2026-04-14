@@ -10,6 +10,8 @@ linked_schemas:
   - Location_Profile
   - Event_Profile
   - Era_Profile
+writable_by:
+  - developmental_editor
 narrative_threads: []
 ---
 

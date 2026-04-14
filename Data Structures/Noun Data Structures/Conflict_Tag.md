@@ -10,6 +10,8 @@ linked_schemas:
   - Wound_Tag
   - Scene_Container
   - Relationship_Profile
+writable_by:
+  - developmental_editor
 narrative_threads: []
 ---
 

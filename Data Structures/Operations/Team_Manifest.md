@@ -8,6 +8,8 @@ status: template
 linked_schemas:
   - Role_Record
   - Scorecard
+writable_by:
+  - managing_editor
 narrative_threads: []
 ---
 

@@ -11,6 +11,9 @@ linked_schemas:
   - Conflict_Tag
   - Character_Profile
   - Subplot_Profile
+writable_by:
+  - developmental_editor
+  - proofreader
 narrative_threads: []
 ---
 

@@ -11,6 +11,9 @@ linked_schemas:
   - Location_Profile
   - Timeline_Entry
   - Scene_Container
+writable_by:
+  - developmental_editor
+  - proofreader
 narrative_threads: []
 ---
 

@@ -11,6 +11,9 @@ linked_schemas:
   - Wound_Profile
   - Location_Profile
   - Starting_Lineup
+writable_by:
+  - acquisitions_editor
+  - managing_editor
 narrative_threads: []
 ---
 

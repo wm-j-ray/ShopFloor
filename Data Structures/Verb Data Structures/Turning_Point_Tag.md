@@ -11,6 +11,8 @@ linked_schemas:
   - Character_Profile
   - Conflict_Tag
   - Arc_Beat_Sheet
+writable_by:
+  - developmental_editor
 narrative_threads: []
 ---
 

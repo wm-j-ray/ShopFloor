@@ -11,6 +11,8 @@ linked_schemas:
   - Beat_Registry
   - Chapter_Profile
   - Scene_Inventory
+writable_by:
+  - developmental_editor
 narrative_threads: []
 ---
 

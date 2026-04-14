@@ -9,6 +9,8 @@ linked_schemas:
   - Character_Profile
   - POV_Profile
   - Voice_Profile
+writable_by:
+  - developmental_editor
 narrative_threads: []
 ---
 

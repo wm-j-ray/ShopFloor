@@ -11,6 +11,8 @@ linked_schemas:
   - Character_Profile
   - Location_Profile
   - POV_Profile
+writable_by:
+  - developmental_editor
 narrative_threads: []
 ---
 

@@ -100,10 +100,10 @@ Design phase. No code. Two foundational specs complete. Spec cleanup complete. S
 | April 14 Roles Design | `Notes/Session-2026-04-14-Roles-Design.md` | Complete |
 | April 14 Skill Designer | `Notes/Session-2026-04-14-Skill-Designer.md` | Complete |
 
-46 data structure schema templates live in `Data Structures/`.
+49 data structure schema templates live in `Data Structures/` (all have `writable_by` in frontmatter as of 2026-04-14).
 5 ROLE.md files in `Roles/` (locked 2026-04-14).
-2 SKILL.md files: `starting-lineup` (AE intake, Tier 3), `skill-designer` (ME meta-skill, Tier 3).
-3 index files in `.shopfloor/`: `schema-index.json`, `role-index.json`, `skill-registry.json`.
+3 SKILL.md files: `starting-lineup` (AE intake, Tier 3), `skill-designer` (ME meta-skill, Tier 3), `greenlight-review` (Publisher, Tier 3).
+3 index files in `.shopfloor/`: `schema-index.json`, `role-index.json`, `skill-registry.json` (3 entries).
 
 ## What's Next (in order)
 
@@ -115,9 +115,9 @@ Design phase. No code. Two foundational specs complete. Spec cleanup complete. S
 6. ~~Generate `schema-index.json` and `role-index.json`~~ ✓ Complete (`.shopfloor/`, 2026-04-14)
 7. ~~Write first SKILL.md~~ ✓ Complete (`Skills/creative/starting-lineup/SKILL.md`, 2026-04-14)
 8. ~~Write `Skills/creative/skill-designer/SKILL.md`~~ ✓ Complete (Tier 3, Managing Editor, 2026-04-14)
-9. **Write `System_Manifest.md` schema template** — `active_project_count`, `quality_control` thresholds
-10. **Add `writable_by` field to all 46 data structure schema templates**
-11. **Write `Skills/creative/greenlight-review/SKILL.md`** — Publisher go/no-go decision (Tier 3)
+9. ~~Write `System_Manifest.md` schema template~~ ✓ Complete (`Data Structures/Operations/System_Manifest.md`, 2026-04-14)
+10. ~~Add `writable_by` field to all schema templates~~ ✓ Complete (49 templates updated 2026-04-14; System_Manifest added to schema-index)
+11. ~~Write `Skills/creative/greenlight-review/SKILL.md`~~ ✓ Complete (Publisher, Tier 3, 2026-04-14)
 
 ## Session Protocol (Mandatory — Established 2026-04-14)
 
@@ -164,7 +164,7 @@ ShopFloor/
   Skills/               — SKILL.md files
     system/             — Tier 1: floor management (not yet written)
     rules/              — Tier 2: quality control (not yet written)
-    creative/           — Tier 3: production (starting-lineup, skill-designer complete)
+    creative/           — Tier 3: production (starting-lineup, greenlight-review, skill-designer complete)
     pending/            — Karen-authored skills awaiting review
   Roles/                — ROLE.md files (all five complete, locked 2026-04-14)
   Notes/                — Session records (written at end of every session)

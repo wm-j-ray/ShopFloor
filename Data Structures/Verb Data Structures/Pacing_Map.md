@@ -11,6 +11,8 @@ linked_schemas:
   - Scene_Container
   - Chapter_Profile
   - Arc_Beat_Sheet
+writable_by:
+  - developmental_editor
 narrative_threads: []
 ---
 

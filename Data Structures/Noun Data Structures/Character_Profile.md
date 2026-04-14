@@ -10,6 +10,8 @@ linked_schemas:
   - Group_Profile
   - Wound_Profile
   - POV_Profile
+writable_by:
+  - developmental_editor
 narrative_threads: []
 ---
 

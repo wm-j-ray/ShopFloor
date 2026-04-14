@@ -11,6 +11,8 @@ linked_schemas:
   - Character_Profile (x2)
   - Conflict_Tag
   - Scene_Container
+writable_by:
+  - developmental_editor
 narrative_threads: []
 ---
 

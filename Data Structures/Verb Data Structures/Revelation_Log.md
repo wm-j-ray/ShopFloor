@@ -11,6 +11,9 @@ linked_schemas:
   - Character_Profile
   - Plot_Thread_Tracker
   - Continuity_Log
+writable_by:
+  - developmental_editor
+  - proofreader
 narrative_threads: []
 ---
 

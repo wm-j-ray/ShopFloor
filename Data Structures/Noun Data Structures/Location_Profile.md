@@ -10,6 +10,8 @@ linked_schemas:
   - Event_Profile
   - Scene_Container
   - Region_Profile
+writable_by:
+  - developmental_editor
 narrative_threads: []
 ---
 

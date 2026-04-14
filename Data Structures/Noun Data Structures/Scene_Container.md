@@ -11,6 +11,8 @@ linked_schemas:
   - Event_Profile
   - Conflict_Tag
   - POV_Profile
+writable_by:
+  - developmental_editor
 narrative_threads: []
 ---
 

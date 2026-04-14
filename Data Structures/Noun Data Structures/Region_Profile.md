@@ -10,6 +10,8 @@ linked_schemas:
   - Era_Profile
   - Group_Profile
   - Character_Profile
+writable_by:
+  - developmental_editor
 narrative_threads: []
 ---
 

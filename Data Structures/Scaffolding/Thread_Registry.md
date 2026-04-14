@@ -11,6 +11,9 @@ linked_schemas:
   - Plot_Thread_Tracker
   - Subplot_Profile
   - Scene_Container
+writable_by:
+  - developmental_editor
+  - proofreader
 narrative_threads: []
 ---
 

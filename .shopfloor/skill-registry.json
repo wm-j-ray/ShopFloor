@@ -28,6 +28,29 @@
     },
 
     {
+      "skillId": "greenlight-review",
+      "skillName": "Greenlight Review",
+      "version": "1.0",
+      "tier": 3,
+      "role": "publisher",
+      "deploymentTargets": ["mobile", "desktop"],
+      "path": "Skills/creative/greenlight-review/SKILL.md",
+      "status": "active",
+      "purpose": "Evaluate a pitched Starting Line-Up against four criteria and render a go/no-go decision for the Publisher.",
+      "contextFingerprint": {
+        "objectModel": [
+          "Starting_Lineup:pitched",
+          "Project:current",
+          "Project:portfolio_summary"
+        ],
+        "system": ["manifest", "session-state", "system-manifest"]
+      },
+      "authoredBy": "bill",
+      "dateCreated": "2026-04-14",
+      "dateModified": "2026-04-14"
+    },
+
+    {
       "skillId": "skill-designer",
       "skillName": "Skill Designer",
       "version": "1.0",

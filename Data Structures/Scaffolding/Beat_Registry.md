@@ -11,6 +11,8 @@ linked_schemas:
   - Framework_Selector
   - Conformance_Report
   - Scene_Container
+writable_by:
+  - developmental_editor
 narrative_threads: []
 ---
 

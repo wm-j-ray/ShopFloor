@@ -7,6 +7,9 @@ date_instantiated: ""
 status: template
 linked_schemas:
   - Particle
+writable_by:
+  - acquisitions_editor
+  - publisher
 narrative_threads: []
 ---
 

@@ -11,6 +11,9 @@ linked_schemas:
   - Beat_Registry
   - Conformance_Report
   - Custom_Framework_Builder
+writable_by:
+  - developmental_editor
+  - managing_editor
 narrative_threads: []
 ---
 

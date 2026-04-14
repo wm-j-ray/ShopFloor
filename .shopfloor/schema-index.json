@@ -439,6 +439,15 @@
       "key_fields": ["manifestID", "version", "roles", "systemSettings", "qualityControl"],
       "linked_schemas": ["Role_Record", "Scorecard"],
       "writable_by": ["managing_editor"]
+    },
+    {
+      "type": "System_Manifest",
+      "category": "operations",
+      "template_version": "1.0",
+      "id_format": "singleton",
+      "key_fields": ["active_project_count", "quality_control"],
+      "linked_schemas": ["Team_Manifest", "Project", "Scorecard"],
+      "writable_by": ["managing_editor"]
     }
 
   ]

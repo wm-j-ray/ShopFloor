@@ -10,6 +10,8 @@ linked_schemas:
   - Conflict_Tag
   - Wound_Tag
   - Beat_Registry
+writable_by:
+  - developmental_editor
 narrative_threads: []
 ---
 

@@ -8,6 +8,8 @@ status: template
 linked_schemas:
   - Role_Record
   - Team_Manifest
+writable_by:
+  - managing_editor
 narrative_threads: []
 ---
 

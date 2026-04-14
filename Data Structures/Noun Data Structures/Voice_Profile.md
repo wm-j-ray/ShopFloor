@@ -10,6 +10,9 @@ linked_schemas:
   - POV_Profile
   - Character_Profile
   - Era_Profile
+writable_by:
+  - developmental_editor
+  - proofreader
 narrative_threads: []
 ---
 

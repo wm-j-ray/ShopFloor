@@ -11,6 +11,8 @@ linked_schemas:
   - Beat_Registry
   - Conformance_Report
   - Story_Spine
+writable_by:
+  - managing_editor
 narrative_threads: []
 ---
 

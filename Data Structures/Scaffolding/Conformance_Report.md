@@ -11,6 +11,8 @@ linked_schemas:
   - Framework_Selector
   - Story_Spine
   - Structural_Gap_Log
+writable_by:
+  - developmental_editor
 narrative_threads: []
 ---
 

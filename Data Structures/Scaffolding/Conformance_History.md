@@ -11,6 +11,9 @@ linked_schemas:
   - Beat_Registry
   - Structural_Gap_Log
   - Story_Spine
+writable_by:
+  - developmental_editor
+  - managing_editor
 narrative_threads: []
 ---
 

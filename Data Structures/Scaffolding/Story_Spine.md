@@ -11,6 +11,8 @@ linked_schemas:
   - Beat_Registry
   - Framework_Selector
   - Theme_Statement
+writable_by:
+  - developmental_editor
 narrative_threads: []
 ---
 

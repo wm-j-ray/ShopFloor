@@ -10,6 +10,8 @@ linked_schemas:
   - Character_Profile
   - Scene_Container
   - Voice_Profile
+writable_by:
+  - developmental_editor
 narrative_threads: []
 ---
 
