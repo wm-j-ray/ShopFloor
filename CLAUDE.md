@@ -112,7 +112,7 @@ Design phase. No code. Two foundational specs complete. Sessions documented in N
 5. ~~Create Starting_Lineup.md schema~~ — pending (schema exists but needs review against SKILL.md)
 6. ~~Generate `schema-index.json` and `role-index.json`~~ ✓ Complete (`.shopfloor/`, 2026-04-14)
 7. ~~Write first SKILL.md~~ ✓ Complete (`Skills/creative/starting-lineup/SKILL.md`, 2026-04-14)
-8. **Write `Skills/creative/skill-designer/SKILL.md`** — the meta-skill (all prerequisites met)
+8. ~~Write `Skills/creative/skill-designer/SKILL.md`~~ ✓ Complete (Tier 3, Managing Editor, 2026-04-14)
 
 ## Session Protocol (Mandatory — Established 2026-04-14)
 
