@@ -97,19 +97,22 @@ Design phase. No code. Two foundational specs complete. Sessions documented in N
 | Skill Designer Spec v1.0 | `Design Documents/Skill Designer Spec.md` | Locked |
 | April 9 Office Hours | `Notes/Session-2026-04-09-Office-Hours.md` | Recovered and saved |
 | April 14 Design Session | `Notes/Session-2026-04-14-Design-Session.md` | Complete |
+| April 14 Roles Design | `Notes/Session-2026-04-14-Roles-Design.md` | Complete |
 
 46 data structure schema templates live in `Data Structures/`.
+5 ROLE.md files in `Roles/` (locked 2026-04-14).
+1 proof-of-concept SKILL.md: `Skills/creative/starting-lineup/SKILL.md` (Tier 3, AE intake).
 
 ## What's Next (in order)
 
-1. Update Particle.md — rewrite to reflect particle-as-tag model
-2. Update Team_Manifest.md — five new roles
-3. Update ShopFloor Storage Spec — particle, roles, close resolved open questions
-4. Write five ROLE.md files (one per role above)
-5. Create Starting_Lineup.md schema
-6. Generate `schema-index.json` and `role-index.json`
-7. Write first SKILL.md — starting-lineup skill (Acquisitions Editor, Tier 3)
-8. Write `Skills/creative/skill-designer/SKILL.md` — the meta-skill
+1. ~~Update Particle.md~~ — pending (particle-as-tag model not yet reflected)
+2. ~~Update Team_Manifest.md~~ — pending (five new roles not yet reflected)
+3. ~~Update ShopFloor Storage Spec~~ — pending (particle, roles, resolved open questions)
+4. ~~Write five ROLE.md files~~ ✓ Complete (locked 2026-04-14)
+5. ~~Create Starting_Lineup.md schema~~ — pending (schema exists but needs review against SKILL.md)
+6. **Generate `schema-index.json` and `role-index.json`** — prerequisite for Skill Designer
+7. ~~Write first SKILL.md~~ ✓ Complete (`Skills/creative/starting-lineup/SKILL.md`, 2026-04-14)
+8. **Write `Skills/creative/skill-designer/SKILL.md`** — the meta-skill (requires #6 first)
 
 ## Session Protocol (Mandatory — Established 2026-04-14)
 
