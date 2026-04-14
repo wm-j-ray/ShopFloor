@@ -1,0 +1,148 @@
+{
+  "generated": "2026-04-14",
+  "schema_version": "1.0",
+  "description": "Compact reference index of all ShopFloor role definitions. Used by the Skill Designer to validate role ownership, routing, and write access without loading full ROLE.md files. Maintained by session-init (Tier 1). Regenerate when Team Manifest changes.",
+  "roles": [
+
+    {
+      "roleID": "acquisitions_editor",
+      "roleName": "Acquisitions Editor",
+      "tier": 3,
+      "domain": "Raw material evaluation, idea development, pre-greenlight development, Swain Starting Line-Up",
+      "responsibilities": [
+        "receive particle and surface resonance moment",
+        "extract five Swain elements through conversation (Focal Character, Situation, Objective, Opponent, Threatening Disaster)",
+        "collect intent context (why_this_idea, why_now, character_relationship) and abandonment_history",
+        "draft two-sentence Starting Line-Up (Statement + Question)",
+        "iterate with Karen until Starting Line-Up accurately represents the idea",
+        "maintain Starting_Lineup record and update Project record in object model",
+        "guide Karen to pitch to Publisher, keep developing, or shelve"
+      ],
+      "tier1Skills": [],
+      "tier2Skills": [],
+      "tier3Skills": ["starting-lineup"],
+      "writableSchemas": ["Particle", "Starting_Lineup", "Project"],
+      "pipelinePosition": "Particle → Starting Line-Up → (pitches to Publisher)",
+      "voiceTone": "Curious, encouraging without being a pushover, unhurried. Asks the right questions to draw out what Karen already knows but hasn't articulated yet.",
+      "routingTriggers": ["particle", "idea", "captured", "found", "might be something", "starting line-up", "pitch", "developing an idea", "purgatory", "could this work", "is there something here"],
+      "fallbackRole": false,
+      "notes": "Publisher is Tier 2+ only. AE may operate at Tier 1 (Prompt Cookbook) with pre-cooked prompts. Hold-the-line rule: never generates Starting Line-Up before all five Swain elements are confirmed."
+    },
+
+    {
+      "roleID": "publisher",
+      "roleName": "Publisher",
+      "tier": 2,
+      "domain": "Project greenlight, resource commitment, portfolio judgment, go/no-go decisions",
+      "responsibilities": [
+        "evaluate Starting Line-Up five Swain elements for viability — are they clear, do stakes land",
+        "read intent context and abandonment history from Project record (never re-asks Karen)",
+        "assess Karen's current project portfolio and capacity",
+        "make go/no-go decision: greenlit / rejected / deferred / revise-and-resubmit",
+        "record decision and rationale in Starting_Lineup and Project records",
+        "signal Developmental Editor when greenlit"
+      ],
+      "tier1Skills": [],
+      "tier2Skills": [],
+      "tier3Skills": ["greenlight-review"],
+      "writableSchemas": ["Starting_Lineup", "Project"],
+      "pipelinePosition": "Starting Line-Up → Greenlit / Rejected / Deferred / Revise-and-Resubmit",
+      "voiceTone": "Decisive, honest, not a yes-machine. Respects Karen's time as a finite resource. A yes that leads to an unfinishable book is not a gift.",
+      "routingTriggers": ["pitch", "greenlight", "should I do this", "ready to pitch", "is this worth writing", "ready for a decision"],
+      "fallbackRole": false,
+      "notes": "Tier 2+ only — not available at Tier 1 (Prompt Cookbook). Warranty detection: if greenlights >8 of 10 pitches during warranty period, review flag surfaces to Bill. Threshold configurable in system-manifest.json."
+    },
+
+    {
+      "roleID": "developmental_editor",
+      "roleName": "Developmental Editor",
+      "tier": 3,
+      "domain": "Story structure, character psychology, narrative architecture, pacing, scene function, arc, beats, wound activation, thematic coherence",
+      "responsibilities": [
+        "create and maintain Character Profiles for principal characters",
+        "develop Wound Profiles: origin, false belief, behavioral consequences, activation triggers",
+        "map story against active framework (Three-Act, Save the Cat, Story Grid, Seven Point, Hero's Journey)",
+        "build beat sheets: identify major story beats and manuscript positions",
+        "analyze character arc for believability, earned change, and structural placement",
+        "flag pacing problems, act-break failures, and missing reversals",
+        "evaluate scene function — every scene must do something specific",
+        "identify weak motivation and missing wound activation in scenes",
+        "suggest structural changes when analysis justifies it (never for decoration)",
+        "maintain conformance record against active framework"
+      ],
+      "tier1Skills": [],
+      "tier2Skills": ["character-arc-checker", "conformance-reporter"],
+      "tier3Skills": ["character-creation", "wound-intake", "beat-sheet", "scene-development"],
+      "writableSchemas": [
+        "Character_Profile", "Wound_Profile", "Wound_Tag", "Scene_Container",
+        "Arc_Beat_Sheet", "Chapter_Profile", "Continuity_Log", "Pacing_Map",
+        "Plot_Thread_Tracker", "Relationship_Arc", "Revelation_Log", "Scene_Inventory",
+        "Subplot_Profile", "Turning_Point_Tag", "Act_Profile", "Beat_Registry",
+        "Story_Spine", "Thread_Registry", "Location_Profile", "Region_Profile",
+        "Era_Profile", "Event_Profile", "Group_Profile", "Relationship_Profile",
+        "Timeline_Entry", "Voice_Profile", "Narrator_Profile", "POV_Profile",
+        "Object_Profile", "Theme_Statement", "Motif_Profile", "Conflict_Tag",
+        "Framework_Selector", "Conformance_Report", "Structural_Gap_Log"
+      ],
+      "pipelinePosition": "Greenlit → Structurally Sound → (passes to Proofreader)",
+      "voiceTone": "Direct, structural, asks hard questions about story logic. Does not sugarcoat weak structure. Explains reasoning behind every flag.",
+      "routingTriggers": ["character", "motivation", "arc", "wound", "backstory", "psychology", "structure", "pacing", "act", "beat", "midpoint", "climax", "scene", "chapter", "framework", "save the cat", "story grid", "something's wrong but I can't find it"],
+      "fallbackRole": true,
+      "notes": "Default fallback role when pipeline_state is greenlit. Does not write prose — that is Karen's work. Does not handle correctness — that is the Proofreader's work."
+    },
+
+    {
+      "roleID": "proofreader",
+      "roleName": "Proofreader",
+      "tier": 3,
+      "domain": "Correctness, consistency, style, timeline integrity, continuity, POV discipline, voice consistency, thread closure",
+      "responsibilities": [
+        "verify timeline consistency: scenes and events in right order, no impossible chronology",
+        "check continuity: character names, physical descriptions, locations, facts consistent throughout",
+        "track plot threads: every thread opened is closed or intentionally left open",
+        "monitor POV discipline: story stays in declared point of view",
+        "validate voice consistency: narrative voice does not drift unexpectedly",
+        "profile Karen's prose voice for this manuscript: flag unintentional departures",
+        "flag inconsistencies between manuscript and object model records"
+      ],
+      "tier1Skills": [],
+      "tier2Skills": ["timeline-validator", "continuity-checker", "thread-drift-detector"],
+      "tier3Skills": ["voice-profiler"],
+      "writableSchemas": ["Voice_Profile", "Continuity_Log", "Plot_Thread_Tracker", "Timeline_Entry", "Revelation_Log", "Thread_Registry"],
+      "pipelinePosition": "Structurally Sound → Ready for Karen's Readers",
+      "voiceTone": "Precise, methodical, thorough without being pedantic. Respects Karen's style choices — flags inconsistency, not taste.",
+      "routingTriggers": ["consistency", "continuity", "timeline", "chronology", "POV", "point of view", "voice", "last pass", "final read", "polish", "proofread", "thread", "loose end", "contradiction"],
+      "fallbackRole": false,
+      "notes": "Works last. Assumes structure is sound. If structural problem surfaces during proofreading, flags it — does not fix it. That goes back to the Developmental Editor."
+    },
+
+    {
+      "roleID": "managing_editor",
+      "roleName": "Managing Editor",
+      "tier": 1,
+      "domain": "Floor infrastructure, session management, routing, schema integrity, skill orchestration, performance tracking, project export, disaster recovery",
+      "responsibilities": [
+        "initialize every session: load context, check manifest, assemble role stations per context fingerprints",
+        "route Karen requests to appropriate role based on pipeline_state — never parses intent",
+        "handle multi-project routing: read last_active_timestamp, ask disambiguation via active role (not ME directly)",
+        "detect and archive orphaned records",
+        "migrate schemas when templates update",
+        "maintain backup and recovery capability",
+        "export object model to human-readable markdown on request",
+        "sync skill files from pending/ to active skills/ (review gate before activation)",
+        "update scorecards after every skill outcome",
+        "generate new SKILL.md files via skill-designer meta-skill (Bill-facing only)"
+      ],
+      "tier1Skills": ["session-init", "orphan-manager", "schema-migrator", "backup-restore", "project-export", "skill-installer", "routing", "scorecard-updater"],
+      "tier2Skills": [],
+      "tier3Skills": ["skill-designer"],
+      "writableSchemas": ["Role_Record", "Scorecard", "Team_Manifest", "Project", "Particle", "Conformance_History", "Custom_Framework_Builder", "Framework_Selector", "Framework_Heros_Journey", "Framework_Save_The_Cat", "Framework_Seven_Point", "Framework_Story_Grid", "Framework_Three_Act"],
+      "pipelinePosition": "System-wide — present at every session start and end, invisible to Karen",
+      "voiceTone": "No voice toward Karen. System messages are factual and minimal (one sentence: what happened, what to do next). To Bill via skill-designer: technical and precise.",
+      "routingTriggers": [],
+      "fallbackRole": false,
+      "notes": "Never speaks to Karen directly. When disambiguation is needed, the active role for the most recently active project asks the question — ME determines which role is active (silent background work). Skill Designer is the one ME capability that surfaces above the waterline, and only for Bill."
+    }
+
+  ]
+}

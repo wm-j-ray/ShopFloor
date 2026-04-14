@@ -1,0 +1,445 @@
+{
+  "generated": "2026-04-14",
+  "schema_version": "1.0",
+  "description": "Compact reference index of all ShopFloor data structure schemas. Used by the Skill Designer to validate write-back contracts without loading full schema files. Maintained by schema-migrator (Tier 1). Regenerate when any schema template_version changes.",
+  "schemas": [
+
+    {
+      "type": "Character_Profile",
+      "category": "noun",
+      "template_version": "2.1",
+      "id_format": "CHR-NNN",
+      "key_fields": ["characterID", "characterName", "narrativeRole", "linkedWoundIDs", "povProfileID"],
+      "linked_schemas": ["Relationship_Profile", "Group_Profile", "Wound_Profile", "POV_Profile"],
+      "writable_by": ["developmental_editor"]
+    },
+    {
+      "type": "Conflict_Tag",
+      "category": "noun",
+      "template_version": "2.1",
+      "id_format": "CTG-NNN",
+      "key_fields": ["conflictTagID", "conflictType", "characterID", "sceneID", "woundTagID"],
+      "linked_schemas": ["Character_Profile", "Wound_Tag", "Scene_Container", "Relationship_Profile"],
+      "writable_by": ["developmental_editor"]
+    },
+    {
+      "type": "Era_Profile",
+      "category": "noun",
+      "template_version": "1.1",
+      "id_format": "ERA-NNN",
+      "key_fields": ["eraID", "eraName", "timeRange", "culturalContext", "linkedRegionIDs"],
+      "linked_schemas": ["Region_Profile", "Group_Profile", "Character_Profile", "Event_Profile"],
+      "writable_by": ["developmental_editor"]
+    },
+    {
+      "type": "Event_Profile",
+      "category": "noun",
+      "template_version": "2.1",
+      "id_format": "EVT-NNN",
+      "key_fields": ["eventID", "eventName", "eventDate", "involvedCharacterIDs", "linkedSceneIDs"],
+      "linked_schemas": ["Character_Profile", "Location_Profile", "Scene_Container", "Era_Profile"],
+      "writable_by": ["developmental_editor"]
+    },
+    {
+      "type": "Group_Profile",
+      "category": "noun",
+      "template_version": "1.1",
+      "id_format": "GRP-NNN",
+      "key_fields": ["groupID", "groupName", "groupType", "memberCharacterIDs", "linkedLocationID"],
+      "linked_schemas": ["Character_Profile", "Location_Profile", "Event_Profile", "Era_Profile"],
+      "writable_by": ["developmental_editor"]
+    },
+    {
+      "type": "Location_Profile",
+      "category": "noun",
+      "template_version": "2.1",
+      "id_format": "LOC-NNN",
+      "key_fields": ["locationID", "locationName", "locationType", "regionID", "linkedSceneIDs"],
+      "linked_schemas": ["Character_Profile", "Event_Profile", "Scene_Container", "Region_Profile"],
+      "writable_by": ["developmental_editor"]
+    },
+    {
+      "type": "Motif_Profile",
+      "category": "noun",
+      "template_version": "1.1",
+      "id_format": "MOT-NNN",
+      "key_fields": ["motifID", "motifName", "motifType", "themeStatementID", "linkedObjectIDs"],
+      "linked_schemas": ["Object_Profile", "Scene_Container", "Theme_Statement", "Character_Profile"],
+      "writable_by": ["developmental_editor"]
+    },
+    {
+      "type": "Narrator_Profile",
+      "category": "noun",
+      "template_version": "1.1",
+      "id_format": "NAR-NNN",
+      "key_fields": ["narratorID", "narratorType", "characterID", "povProfileID", "voiceProfileID"],
+      "linked_schemas": ["Character_Profile", "POV_Profile", "Voice_Profile"],
+      "writable_by": ["developmental_editor"]
+    },
+    {
+      "type": "Object_Profile",
+      "category": "noun",
+      "template_version": "2.1",
+      "id_format": "OBJ-NNN",
+      "key_fields": ["objectID", "objectName", "symbolicRole", "ownerCharacterID", "linkedSceneIDs"],
+      "linked_schemas": ["Character_Profile", "Location_Profile", "Event_Profile", "Scene_Container"],
+      "writable_by": ["developmental_editor"]
+    },
+    {
+      "type": "POV_Profile",
+      "category": "noun",
+      "template_version": "1.1",
+      "id_format": "POV-NNN",
+      "key_fields": ["povProfileID", "povType", "characterID", "narratorID", "voiceProfileID"],
+      "linked_schemas": ["Character_Profile", "Narrator_Profile", "Voice_Profile", "Scene_Container"],
+      "writable_by": ["developmental_editor"]
+    },
+    {
+      "type": "Particle",
+      "category": "noun",
+      "template_version": "2.0",
+      "id_format": "UUID",
+      "key_fields": ["uuid", "currentFilename", "isParticle", "particleStatus", "linkedStartingLineup", "resonanceNote", "captureMethod"],
+      "linked_schemas": ["Character_Profile", "Scene_Container", "Wound_Profile", "Location_Profile", "Starting_Lineup"],
+      "writable_by": ["acquisitions_editor", "managing_editor"]
+    },
+    {
+      "type": "Region_Profile",
+      "category": "noun",
+      "template_version": "1.1",
+      "id_format": "RGN-NNN",
+      "key_fields": ["regionID", "regionName", "climate", "linkedLocationIDs", "linkedEraIDs"],
+      "linked_schemas": ["Location_Profile", "Era_Profile", "Group_Profile", "Character_Profile"],
+      "writable_by": ["developmental_editor"]
+    },
+    {
+      "type": "Relationship_Profile",
+      "category": "noun",
+      "template_version": "1.1",
+      "id_format": "REL-NNN",
+      "key_fields": ["relationshipID", "characterAID", "characterBID", "relationshipType", "conflictTagIDs"],
+      "linked_schemas": ["Character_Profile", "Conflict_Tag", "Wound_Tag", "Scene_Container"],
+      "writable_by": ["developmental_editor"]
+    },
+    {
+      "type": "Scene_Container",
+      "category": "noun",
+      "template_version": "1.1",
+      "id_format": "SCN-NNN",
+      "key_fields": ["sceneID", "sceneTitle", "povCharacterID", "locationID", "conflictTagIDs", "sceneFunction"],
+      "linked_schemas": ["Character_Profile", "Location_Profile", "Event_Profile", "Conflict_Tag", "POV_Profile"],
+      "writable_by": ["developmental_editor"]
+    },
+    {
+      "type": "Starting_Lineup",
+      "category": "noun",
+      "template_version": "1.0",
+      "id_format": "SLU-NNN",
+      "key_fields": ["startingLineupID", "workingTitle", "status", "sourceParticleUUIDs", "swainElements", "statement", "question", "publisherDecision"],
+      "linked_schemas": ["Particle"],
+      "writable_by": ["acquisitions_editor", "publisher"]
+    },
+    {
+      "type": "Theme_Statement",
+      "category": "noun",
+      "template_version": "1.1",
+      "id_format": "THM-NNN",
+      "key_fields": ["themeID", "themeStatement", "thematicArgument", "linkedMotifIDs", "linkedCharacterIDs"],
+      "linked_schemas": ["Motif_Profile", "Character_Profile", "Scene_Container", "Voice_Profile"],
+      "writable_by": ["developmental_editor"]
+    },
+    {
+      "type": "Timeline_Entry",
+      "category": "noun",
+      "template_version": "1.1",
+      "id_format": "TML-NNN",
+      "key_fields": ["timelineEntryID", "entryDate", "characterID", "eventID", "linkedSceneID"],
+      "linked_schemas": ["Character_Profile", "Event_Profile", "Scene_Container", "Era_Profile"],
+      "writable_by": ["developmental_editor", "proofreader"]
+    },
+    {
+      "type": "Voice_Profile",
+      "category": "noun",
+      "template_version": "1.1",
+      "id_format": "VOC-NNN",
+      "key_fields": ["voiceProfileID", "narratorID", "registryTone", "syntaxPatterns", "driftFlags"],
+      "linked_schemas": ["Narrator_Profile", "POV_Profile", "Character_Profile", "Era_Profile"],
+      "writable_by": ["developmental_editor", "proofreader"]
+    },
+    {
+      "type": "Wound_Profile",
+      "category": "noun",
+      "template_version": "2.2",
+      "id_format": "WND-NNN",
+      "key_fields": ["woundID", "characterID", "coreWound", "falseBelief", "activationTriggers", "behavioralConsequences"],
+      "linked_schemas": ["Character_Profile", "Conflict_Tag", "Wound_Tag", "Beat_Registry"],
+      "writable_by": ["developmental_editor"]
+    },
+    {
+      "type": "Wound_Tag",
+      "category": "noun",
+      "template_version": "2.1",
+      "id_format": "WTG-NNN",
+      "key_fields": ["woundTagID", "woundProfileID", "sceneID", "activationType", "activationDescription"],
+      "linked_schemas": ["Wound_Profile", "Character_Profile"],
+      "writable_by": ["developmental_editor"]
+    },
+
+    {
+      "type": "Arc_Beat_Sheet",
+      "category": "verb",
+      "template_version": "1.1",
+      "id_format": "ABS-NNN",
+      "key_fields": ["arcBeatSheetID", "characterID", "frameworkID", "beats", "arcSummary"],
+      "linked_schemas": ["Character_Profile", "Wound_Profile", "Scene_Container", "Theme_Statement"],
+      "writable_by": ["developmental_editor"]
+    },
+    {
+      "type": "Chapter_Profile",
+      "category": "verb",
+      "template_version": "1.1",
+      "id_format": "CHP-NNN",
+      "key_fields": ["chapterID", "chapterNumber", "povCharacterID", "linkedSceneIDs", "conflictTagIDs"],
+      "linked_schemas": ["Scene_Container", "POV_Profile", "Character_Profile", "Conflict_Tag"],
+      "writable_by": ["developmental_editor"]
+    },
+    {
+      "type": "Continuity_Log",
+      "category": "verb",
+      "template_version": "1.1",
+      "id_format": "CNT-NNN",
+      "key_fields": ["continuityLogID", "entryType", "establishedFact", "firstMentionSceneID", "linkedCharacterIDs"],
+      "linked_schemas": ["Character_Profile", "Location_Profile", "Timeline_Entry", "Scene_Container"],
+      "writable_by": ["developmental_editor", "proofreader"]
+    },
+    {
+      "type": "Pacing_Map",
+      "category": "verb",
+      "template_version": "1.1",
+      "id_format": "PCG-NNN",
+      "key_fields": ["pacingMapID", "sceneInventoryID", "tensionCurve", "pacingFlags", "linkedChapterIDs"],
+      "linked_schemas": ["Scene_Inventory", "Scene_Container", "Chapter_Profile", "Arc_Beat_Sheet"],
+      "writable_by": ["developmental_editor"]
+    },
+    {
+      "type": "Plot_Thread_Tracker",
+      "category": "verb",
+      "template_version": "1.1",
+      "id_format": "PTT-NNN",
+      "key_fields": ["plotThreadID", "threadName", "openingSceneID", "closingSceneID", "status"],
+      "linked_schemas": ["Scene_Container", "Conflict_Tag", "Character_Profile", "Subplot_Profile"],
+      "writable_by": ["developmental_editor", "proofreader"]
+    },
+    {
+      "type": "Relationship_Arc",
+      "category": "verb",
+      "template_version": "1.1",
+      "id_format": "RAC-NNN",
+      "key_fields": ["relationshipArcID", "characterAID", "characterBID", "arcStages", "linkedConflictTagIDs"],
+      "linked_schemas": ["Relationship_Profile", "Character_Profile", "Conflict_Tag", "Scene_Container"],
+      "writable_by": ["developmental_editor"]
+    },
+    {
+      "type": "Revelation_Log",
+      "category": "verb",
+      "template_version": "1.1",
+      "id_format": "RVL-NNN",
+      "key_fields": ["revelationLogID", "revelationType", "sceneID", "characterID", "linkedPlotThreadID"],
+      "linked_schemas": ["Scene_Container", "Character_Profile", "Plot_Thread_Tracker", "Continuity_Log"],
+      "writable_by": ["developmental_editor", "proofreader"]
+    },
+    {
+      "type": "Scene_Inventory",
+      "category": "verb",
+      "template_version": "1.2",
+      "id_format": "SIN-NNN",
+      "key_fields": ["sceneInventoryID", "totalSceneCount", "sceneEntries", "pacingFlag", "linkedChapterIDs"],
+      "linked_schemas": ["Scene_Container", "Character_Profile", "Location_Profile", "POV_Profile"],
+      "writable_by": ["developmental_editor"]
+    },
+    {
+      "type": "Subplot_Profile",
+      "category": "verb",
+      "template_version": "1.1",
+      "id_format": "SUB-NNN",
+      "key_fields": ["subplotID", "subplotName", "primaryCharacterID", "linkedSceneIDs", "resolution"],
+      "linked_schemas": ["Character_Profile", "Scene_Container", "Arc_Beat_Sheet", "Theme_Statement", "Conflict_Tag"],
+      "writable_by": ["developmental_editor"]
+    },
+    {
+      "type": "Turning_Point_Tag",
+      "category": "verb",
+      "template_version": "1.1",
+      "id_format": "TPT-NNN",
+      "key_fields": ["turningPointID", "turningPointType", "sceneID", "characterID", "beatRegistryID"],
+      "linked_schemas": ["Scene_Container", "Character_Profile", "Conflict_Tag", "Arc_Beat_Sheet"],
+      "writable_by": ["developmental_editor"]
+    },
+
+    {
+      "type": "Act_Profile",
+      "category": "scaffolding",
+      "template_version": "1.1",
+      "id_format": "ACT-NNN",
+      "key_fields": ["actProfileID", "actNumber", "storySpineID", "beatRegistryID", "linkedChapterIDs"],
+      "linked_schemas": ["Story_Spine", "Beat_Registry", "Chapter_Profile", "Scene_Inventory"],
+      "writable_by": ["developmental_editor"]
+    },
+    {
+      "type": "Beat_Registry",
+      "category": "scaffolding",
+      "template_version": "1.1",
+      "id_format": "BRG-NNN",
+      "key_fields": ["beatRegistryID", "frameworkID", "beats", "storySpineID", "conformanceReportID"],
+      "linked_schemas": ["Story_Spine", "Framework_Selector", "Conformance_Report", "Scene_Container"],
+      "writable_by": ["developmental_editor"]
+    },
+    {
+      "type": "Conformance_History",
+      "category": "scaffolding",
+      "template_version": "1.1",
+      "id_format": "CNH-NNN",
+      "key_fields": ["conformanceHistoryID", "projectID", "conformanceReportIDs", "lastChecked"],
+      "linked_schemas": ["Conformance_Report", "Beat_Registry", "Structural_Gap_Log", "Story_Spine"],
+      "writable_by": ["developmental_editor", "managing_editor"]
+    },
+    {
+      "type": "Conformance_Report",
+      "category": "scaffolding",
+      "template_version": "1.1",
+      "id_format": "CFR-NNN",
+      "key_fields": ["conformanceReportID", "frameworkID", "beatRegistryID", "gapCount", "structuralGapIDs"],
+      "linked_schemas": ["Beat_Registry", "Framework_Selector", "Story_Spine", "Structural_Gap_Log"],
+      "writable_by": ["developmental_editor"]
+    },
+    {
+      "type": "Custom_Framework_Builder",
+      "category": "scaffolding",
+      "template_version": "1.1",
+      "id_format": "CFB-NNN",
+      "key_fields": ["customFrameworkID", "frameworkName", "actCount", "beatDefinitions", "linkedFrameworkSelectorID"],
+      "linked_schemas": ["Framework_Selector", "Beat_Registry", "Conformance_Report", "Story_Spine"],
+      "writable_by": ["managing_editor"]
+    },
+    {
+      "type": "Framework_Selector",
+      "category": "scaffolding",
+      "template_version": "1.1",
+      "id_format": "FWS-NNN",
+      "key_fields": ["frameworkSelectorID", "activeFrameworkID", "frameworkType", "storySpineID", "beatRegistryID"],
+      "linked_schemas": ["Story_Spine", "Beat_Registry", "Conformance_Report", "Custom_Framework_Builder"],
+      "writable_by": ["developmental_editor", "managing_editor"]
+    },
+    {
+      "type": "Story_Spine",
+      "category": "scaffolding",
+      "template_version": "1.1",
+      "id_format": "SSP-NNN",
+      "key_fields": ["storySpineID", "frameworkID", "actProfiles", "beatRegistryID", "themeStatementID"],
+      "linked_schemas": ["Act_Profile", "Beat_Registry", "Framework_Selector", "Theme_Statement"],
+      "writable_by": ["developmental_editor"]
+    },
+    {
+      "type": "Structural_Gap_Log",
+      "category": "scaffolding",
+      "template_version": "1.1",
+      "id_format": "SGL-NNN",
+      "key_fields": ["structuralGapID", "gapType", "conformanceReportID", "linkedSceneID", "resolution"],
+      "linked_schemas": ["Conformance_Report", "Beat_Registry", "Scene_Container", "Arc_Beat_Sheet"],
+      "writable_by": ["developmental_editor"]
+    },
+    {
+      "type": "Thread_Registry",
+      "category": "scaffolding",
+      "template_version": "1.0",
+      "id_format": "TRG-NNN",
+      "key_fields": ["threadRegistryID", "storySpineID", "plotThreadIDs", "subplotIDs", "openThreadCount"],
+      "linked_schemas": ["Story_Spine", "Plot_Thread_Tracker", "Subplot_Profile", "Scene_Container"],
+      "writable_by": ["developmental_editor", "proofreader"]
+    },
+
+    {
+      "type": "Framework_Heros_Journey",
+      "category": "framework",
+      "template_version": "1.0",
+      "id_format": "FHJ-NNN",
+      "key_fields": ["frameworkID", "frameworkName", "stageCount", "stages", "linkedBeatRegistryID"],
+      "linked_schemas": ["Framework_Selector", "Beat_Registry", "Conformance_Report", "Story_Spine"],
+      "writable_by": ["managing_editor"]
+    },
+    {
+      "type": "Framework_Save_The_Cat",
+      "category": "framework",
+      "template_version": "1.0",
+      "id_format": "FSC-NNN",
+      "key_fields": ["frameworkID", "frameworkName", "beatCount", "beats", "linkedBeatRegistryID"],
+      "linked_schemas": ["Framework_Selector", "Beat_Registry", "Conformance_Report", "Story_Spine"],
+      "writable_by": ["managing_editor"]
+    },
+    {
+      "type": "Framework_Seven_Point",
+      "category": "framework",
+      "template_version": "1.0",
+      "id_format": "FSP-NNN",
+      "key_fields": ["frameworkID", "frameworkName", "pointCount", "points", "linkedBeatRegistryID"],
+      "linked_schemas": ["Framework_Selector", "Beat_Registry", "Conformance_Report", "Story_Spine"],
+      "writable_by": ["managing_editor"]
+    },
+    {
+      "type": "Framework_Story_Grid",
+      "category": "framework",
+      "template_version": "1.0",
+      "id_format": "FSG-NNN",
+      "key_fields": ["frameworkID", "frameworkName", "shiftCount", "storyValues", "linkedBeatRegistryID"],
+      "linked_schemas": ["Framework_Selector", "Beat_Registry", "Conformance_Report", "Story_Spine"],
+      "writable_by": ["managing_editor"]
+    },
+    {
+      "type": "Framework_Three_Act",
+      "category": "framework",
+      "template_version": "1.0",
+      "id_format": "FTA-NNN",
+      "key_fields": ["frameworkID", "frameworkName", "actCount", "acts", "linkedBeatRegistryID"],
+      "linked_schemas": ["Framework_Selector", "Beat_Registry", "Conformance_Report", "Story_Spine"],
+      "writable_by": ["managing_editor"]
+    },
+
+    {
+      "type": "Project",
+      "category": "operations",
+      "template_version": "1.0",
+      "id_format": "PRJ-NNN",
+      "key_fields": ["project_id", "uuid", "pipeline_state", "active_role", "swain_elements", "active_starting_lineup_id", "abandonment_history", "intent_context"],
+      "linked_schemas": ["Particle", "Starting_Lineup", "Scorecard"],
+      "writable_by": ["acquisitions_editor", "publisher", "managing_editor"]
+    },
+    {
+      "type": "Role_Record",
+      "category": "operations",
+      "template_version": "1.0",
+      "id_format": "ROL-NNN",
+      "key_fields": ["roleRecordID", "roleID", "roleName", "activeSkills", "linkedScorecardID"],
+      "linked_schemas": ["Scorecard", "Team_Manifest"],
+      "writable_by": ["managing_editor"]
+    },
+    {
+      "type": "Scorecard",
+      "category": "operations",
+      "template_version": "1.0",
+      "id_format": "SCD-NNN",
+      "key_fields": ["scorecardID", "roleID", "projectID", "outcomeHistory", "evaluationMode", "warrantyStatus"],
+      "linked_schemas": ["Role_Record", "Team_Manifest"],
+      "writable_by": ["managing_editor"]
+    },
+    {
+      "type": "Team_Manifest",
+      "category": "operations",
+      "template_version": "2.0",
+      "id_format": "TMF-001",
+      "key_fields": ["manifestID", "version", "roles", "systemSettings", "qualityControl"],
+      "linked_schemas": ["Role_Record", "Scorecard"],
+      "writable_by": ["managing_editor"]
+    }
+
+  ]
+}
