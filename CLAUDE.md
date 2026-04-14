@@ -48,7 +48,10 @@ Threatening Disaster → two sentences (Statement + Question). Schema: Starting_
 **`.shopfloor/`** — hidden platform infrastructure directory inside every project folder.
 Karen never sees it. Contains manifest, object model, audit trail, session state, skills cache.
 
-## The Five Roles (Locked 2026-04-14)
+## The Five StoryEngine Roles (Locked 2026-04-14)
+
+These are **StoryEngine vertical roles** — domain experts in fiction. They know nothing about
+platform internals.
 
 | Role | Job |
 |------|-----|
@@ -56,7 +59,11 @@ Karen never sees it. Contains manifest, object model, audit trail, session state
 | **Publisher** | Go / no-go decision. Answers: "Is this worth doing now?" |
 | **Developmental Editor** | Post-greenlight hard work: structure, character, arc, beats |
 | **Proofreader** | Last mile: correctness, consistency, style |
-| **Managing Editor** | Floor infrastructure — invisible to Karen |
+| **Managing Editor** | StoryEngine creative floor — routes Karen to the right role. Tier 3. |
+
+**Foreman** — ShopFloor **platform** role (NOT StoryEngine). Lives at `Roles/foreman/ROLE.md`.
+Owns: vertical registration, global registry, team manifest, context index generation, halt
+detection, session init orchestration. Tier 1 skills in `Skills/system/`.
 
 **The pipeline:**
 ```
@@ -89,19 +96,21 @@ The inbox notebook is a first-class concept — where captures land when Karen d
 
 ## Current Status (2026-04-14)
 
-Design phase. No code. Two foundational specs complete. Spec cleanup complete. Sessions documented in Notes/.
+Design phase. No code. Three foundational specs complete. Platform/vertical seam defined. Sessions documented in Notes/.
 
 | Document | Path | Status |
 |----------|------|--------|
 | ShopFloor Storage Spec v1.0 | `Design Documents/ShopFloor Storage Spec.md` | Updated 2026-04-14 |
+| ShopFloor Platform Spec v1.0 | `Design Documents/ShopFloor Platform Spec.md` | Complete 2026-04-14 |
 | Skill Designer Spec v1.0 | `Design Documents/Skill Designer Spec.md` | Locked |
 | April 9 Office Hours | `Notes/Session-2026-04-09-Office-Hours.md` | Recovered and saved |
 | April 14 Design Session | `Notes/Session-2026-04-14-Design-Session.md` | Complete |
 | April 14 Roles Design | `Notes/Session-2026-04-14-Roles-Design.md` | Complete |
 | April 14 Skill Designer | `Notes/Session-2026-04-14-Skill-Designer.md` | Complete |
+| April 14 Platform Spec | `Notes/Session-2026-04-14-Platform-Spec.md` | Pending write |
 
 49 data structure schema templates live in `Data Structures/` (all have `writable_by` in frontmatter as of 2026-04-14).
-5 ROLE.md files in `Roles/` (locked 2026-04-14).
+5 StoryEngine ROLE.md files in `Roles/` (locked 2026-04-14). Foreman ROLE.md not yet written.
 3 SKILL.md files: `starting-lineup` (AE intake, Tier 3), `skill-designer` (ME meta-skill, Tier 3), `greenlight-review` (Publisher, Tier 3).
 3 index files in `.shopfloor/`: `schema-index.json`, `role-index.json`, `skill-registry.json` (3 entries).
 
@@ -118,6 +127,16 @@ Design phase. No code. Two foundational specs complete. Spec cleanup complete. S
 9. ~~Write `System_Manifest.md` schema template~~ ✓ Complete (`Data Structures/Operations/System_Manifest.md`, 2026-04-14)
 10. ~~Add `writable_by` field to all schema templates~~ ✓ Complete (49 templates updated 2026-04-14; System_Manifest added to schema-index)
 11. ~~Write `Skills/creative/greenlight-review/SKILL.md`~~ ✓ Complete (Publisher, Tier 3, 2026-04-14)
+12. ~~Write ShopFloor Platform Spec~~ ✓ Complete (`Design Documents/ShopFloor Platform Spec.md`, 2026-04-14)
+
+**Up next:**
+13. Write session notes: `Notes/Session-2026-04-14-Platform-Spec.md` — decisions from today's platform spec session
+14. Write `Roles/foreman/ROLE.md` — ShopFloor platform Foreman role (Tier 1, platform not vertical)
+15. Write `Skills/system/vertical-registration/SKILL.md` — Foreman's first Tier 1 skill
+16. Write `VERTICAL.md` at repo root — StoryEngine's registration declaration (vertical contract Foreman reads)
+17. Write StoryEngine Spec — all §18.2 vertical concepts from Platform Spec (fiction domain, five roles, entity types, particle extensions)
+18. Update existing 5 ROLE.md files — remove platform language from Managing Editor; audit others for seam violations
+19. Add `vertical: storyengine` frontmatter to all 49 fiction-domain schema templates
 
 ## Session Protocol (Mandatory — Established 2026-04-14)
 
@@ -132,7 +151,41 @@ Design phase. No code. Two foundational specs complete. Spec cleanup complete. S
 - Platform = **ShopFloor** (vertical-agnostic). First vertical = **StoryEngine** (fiction).
 - Hidden dir = `.shopfloor/`. Product root = `StoryEngine/` in iCloud Drive.
 - **Native iOS/macOS app.** Filesystem with UI frontend. NOT a web app.
+- **Governing principle:** "Subject matter expertise is the domain of the vertical. ShopFloor
+  knows nothing about fiction. StoryEngine knows nothing about platform internals." Use this
+  to resolve any ambiguous placement question.
+- **Two tier systems — do not conflate:**
+  - Product tiers (0/1/2): what Karen's subscription includes (Stash / Prompt Cookbook / Hyperdrive)
+  - Skill architecture tiers (1/2/3): floor management / quality control / production
+  - In VERTICAL.md fields: `skill_tier` = skill tier; `product_tier_compatibility` = product tier.
+- **Foreman** is a ShopFloor **platform** role (NOT StoryEngine). `Roles/foreman/ROLE.md`.
+  Owns: vertical registration, global registry, team manifest, context index generation, halt
+  detection, session init. Tier 1 skills in `Skills/system/`.
+- **Managing Editor** stays Tier 3 (StoryEngine production). Routes Karen within StoryEngine.
+  It is NOT a platform role. Foreman handles platform floor; Managing Editor handles StoryEngine
+  creative floor. Do not conflate.
+- **VERTICAL.md** is the vertical registration contract. Lives at repo root. Foreman reads and
+  validates it on session init. Declares: vertical ID, entity types + prefixes, per-file extensions,
+  context indexes, roles, skills.
+- **Two registries:**
+  - `~/.shopfloor/global-registry.json` — all installed verticals. Foreman writes. Global employee file.
+  - `.shopfloor/skills/skill-registry.json` — per-project. Active vertical + evaluation state. Shift roster.
+  - `team-manifest.json` retained — per-project shift roster (which roles are active). Distinct from
+    global registry. Foreman writes both.
+- **platform.halt** — file at product root. Create it to halt all AI execution for the session
+  (overrides product tier to 0, no object model writes, audit continues). Delete to restore.
+  Replaces "KILLSWITCH" (retired). Creatable on iOS Files app in seconds.
+- **Per-file metadata:** platform base fields + vertical extensions. Verticals declare extensions
+  in VERTICAL.md under `per_file_extensions`. Platform-reserved fields cannot be overridden.
+- **Context indexing** is a generalized platform mechanism. Verticals declare indexes in VERTICAL.md.
+  Foreman generates lazily with source-based invalidation. Skills declare needed indexes in
+  `contextFingerprint`. The old hardcoded schema-index/role-index are now instances of this mechanism.
+- **Entity ID format standardized:** `[PREFIX]-[5-digit-padded-sequence]`, e.g., `CHR-00001`.
+  Regex: `^[A-Z]{2,4}-[0-9]{5}$`. Verticals declare type prefixes in VERTICAL.md under `entity_types`
+  (2–4 uppercase letters, unique per vertical, platform enforces no cross-vertical conflicts).
 - **Particle = tag on a file.** NOT a separate data structure. `isParticle: true` in per-file metadata.
+  Platform owns: isParticle, captureMethod, sourceApp, sourceURL, particleStatus (generic lifecycle).
+  StoryEngine owns: resonanceNote, linkedStartingLineup, entity chips (declared in VERTICAL.md extensions).
 - Capture method enum: `share_sheet / direct / import / sync / manual / promoted` (closed).
   `promoted` = file already existed in Karen's notebooks; she elevated it to particle status.
   Source app = open string auto-populated from Share Sheet metadata. Never hardcode app names.
@@ -142,8 +195,8 @@ Design phase. No code. Two foundational specs complete. Spec cleanup complete. S
   every N uses, default 3rd), `passive` (observe only). Defaults live in `system-manifest.json`
   under `quality_control`.
 - `SKILL_FEEDBACK` events carry a `karensNote` field — free text, optional, most actionable signal.
-- The Skill Designer is Bottleneck 19.7 — most context-hungry operation. Mitigated by
-  `schema-index.json` and `role-index.json` compressed indexes (both generated 2026-04-14).
+- The Skill Designer is Bottleneck 19.7 — most context-hungry operation. Mitigated by context
+  indexing mechanism (schema-index, role-index as generated instances).
 - Object model updates triggered by explicit skill invocation only (Open Question #4 — CLOSED).
 - `writable_by` enforcement in Skill Designer: Warning for Bill (can override by fixing schema-index),
   Fail (hard block) for Karen-authored skills. Overrides resolve at schema-index level, not per-skill.
@@ -153,22 +206,27 @@ Design phase. No code. Two foundational specs complete. Spec cleanup complete. S
 
 ```
 ShopFloor/
-  Design Documents/     — ShopFloor Storage Spec, Skill Designer Spec, ERD, Seed Data
-  Data Structures/      — 46 schema templates
+  VERTICAL.md           — StoryEngine registration contract (Foreman reads on session init) [not yet written]
+  Design Documents/     — Storage Spec, Platform Spec, Skill Designer Spec, ERD, Seed Data
+  Data Structures/      — 49 schema templates (StoryEngine vertical domain)
     Noun Data Structures/   Character, Wound, Scene, Location, Particle, etc.
     Verb Data Structures/   Arc, Chapter, Continuity, Pacing, etc.
     Scaffolding/            Act, Beat, Conformance, Framework, etc.
     Frameworks/             Three-Act, Save the Cat, Seven Point, Story Grid, Hero's Journey
-    Operations/             Role_Record, Scorecard, Team_Manifest
+    Operations/             Role_Record, Scorecard, Team_Manifest, System_Manifest
   Assets/               — reference graphics (NotebooksApp study)
   Skills/               — SKILL.md files
-    system/             — Tier 1: floor management (not yet written)
+    system/             — Tier 1: platform floor management (Foreman's skills — not yet written)
     rules/              — Tier 2: quality control (not yet written)
     creative/           — Tier 3: production (starting-lineup, greenlight-review, skill-designer complete)
     pending/            — Karen-authored skills awaiting review
-  Roles/                — ROLE.md files (all five complete, locked 2026-04-14)
+  Roles/                — ROLE.md files
+    foreman/            — ShopFloor platform Foreman [not yet written]
+    acquisitions-editor/ developmental-editor/ proofreader/ publisher/ managing-editor/
   Notes/                — Session records (written at end of every session)
   App/                  — future Xcode/Swift project
+  .shopfloor/           — hidden platform infrastructure (not committed; generated at runtime)
+    schema-index.json   role-index.json   skill-registry.json
 ```
 
 ---
