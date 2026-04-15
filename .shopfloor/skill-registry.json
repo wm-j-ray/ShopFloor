@@ -187,6 +187,29 @@
         },
 
         {
+          "skillId": "character-creation",
+          "skillName": "Character Creation",
+          "version": "1.0",
+          "tier": 3,
+          "role": "developmental_editor",
+          "deploymentTargets": ["mobile", "desktop"],
+          "path": "Skills/verticals/storyengine/creative/character-creation/SKILL.md",
+          "status": "active",
+          "purpose": "Conversational intake to create a new Character_Profile (and optional Wound_Profile stub) for a greenlighted project. Hold-the-line: name + narrativeRole + coreMotivation required before write. Never invents details. Offers wound-intake handoff when a wound surfaces.",
+          "contextFingerprint": {
+            "objectModel": [
+              "Project:active",
+              "Character_Profile:all",
+              "Wound_Profile:linked"
+            ],
+            "system": ["manifest", "session-state"]
+          },
+          "authoredBy": "bill",
+          "dateCreated": "2026-04-15",
+          "dateModified": "2026-04-15"
+        },
+
+        {
           "skillId": "greenlight-review",
           "skillName": "Greenlight Review",
           "version": "1.0",

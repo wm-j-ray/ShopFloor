@@ -111,7 +111,7 @@ Design phase. No code. Three foundational specs complete. Platform/vertical seam
 
 49 data structure schema templates live in `Data Structures/` (all have `writable_by` and `vertical` in frontmatter as of 2026-04-15).
 6 ROLE.md files: 5 StoryEngine vertical roles in `Roles/verticals/storyengine/` + Foreman platform role in `Roles/platform/foreman/`.
-9 SKILL.md files: `starting-lineup` (AE, Tier 3), `greenlight-review` (Publisher, Tier 3) in `Skills/verticals/storyengine/creative/`; 7 platform skills in `Skills/platform/`: `session-init`, `halt-monitor`, `transaction-manager`, `vertical-registration`, `context-index-generator`, `rebuild` (all Foreman Tier 1) + `skill-designer` (Foreman Tier 3).
+10 SKILL.md files: `starting-lineup` (AE, Tier 3), `greenlight-review` (Publisher, Tier 3), `character-creation` (Dev Editor, Tier 3) in `Skills/verticals/storyengine/creative/`; 7 platform skills in `Skills/platform/`: `session-init`, `halt-monitor`, `transaction-manager`, `vertical-registration`, `context-index-generator`, `rebuild` (all Foreman Tier 1) + `skill-designer` (Foreman Tier 3).
 3 index files in `.shopfloor/`: `schema-index.json`, `role-index.json`, `skill-registry.json`.
 `VERTICAL.md` written 2026-04-15 at repo root.
 `StoryEngine Spec.md` written 2026-04-15 in `Design Documents/`.

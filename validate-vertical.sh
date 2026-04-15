@@ -53,8 +53,9 @@ check_file "Roles/verticals/storyengine/managing-editor/ROLE.md"     "role"
 echo ""
 
 echo "--- Skill paths (skills[].path) ---"
-check_file "Skills/verticals/storyengine/creative/starting-lineup/SKILL.md"  "skill"
-check_file "Skills/verticals/storyengine/creative/greenlight-review/SKILL.md" "skill"
+check_file "Skills/verticals/storyengine/creative/starting-lineup/SKILL.md"       "skill"
+check_file "Skills/verticals/storyengine/creative/greenlight-review/SKILL.md"  "skill"
+check_file "Skills/verticals/storyengine/creative/character-creation/SKILL.md" "skill"
 echo ""
 
 echo "--- Schema paths (schema_paths[]) ---"
