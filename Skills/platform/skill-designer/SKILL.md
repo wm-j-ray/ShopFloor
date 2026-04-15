@@ -3,13 +3,13 @@ skill_id: skill-designer
 skill_name: Skill Designer
 version: "1.1"
 tier: 3
-role: managing-editor
+role: foreman
 deployment_targets:
   - desktop
 requires_ai: true
 status: draft
 date_created: "2026-04-14"
-date_modified: "2026-04-14"
+date_modified: "2026-04-15"
 authored_by: bill
 inputs:
   - resource: schema-index

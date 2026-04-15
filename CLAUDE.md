@@ -110,9 +110,10 @@ Design phase. No code. Three foundational specs complete. Platform/vertical seam
 | April 14 Platform Spec | `Notes/Session-2026-04-14-Platform-Spec.md` | Pending write |
 
 49 data structure schema templates live in `Data Structures/` (all have `writable_by` in frontmatter as of 2026-04-14).
-5 StoryEngine ROLE.md files in `Roles/` (locked 2026-04-14). Foreman ROLE.md not yet written.
-3 SKILL.md files: `starting-lineup` (AE intake, Tier 3), `skill-designer` (ME meta-skill, Tier 3), `greenlight-review` (Publisher, Tier 3).
-3 index files in `.shopfloor/`: `schema-index.json`, `role-index.json`, `skill-registry.json` (3 entries).
+6 ROLE.md files: 5 StoryEngine vertical roles in `Roles/verticals/storyengine/` + Foreman platform role in `Roles/platform/foreman/`.
+4 SKILL.md files: `starting-lineup` (AE, Tier 3), `greenlight-review` (Publisher, Tier 3) in `Skills/verticals/storyengine/creative/`; `skill-designer` (Foreman, Tier 3, platform) and `vertical-registration` (Foreman, Tier 1) in `Skills/platform/`.
+3 index files in `.shopfloor/`: `schema-index.json`, `role-index.json`, `skill-registry.json`.
+`VERTICAL.md` written 2026-04-15 at repo root.
 
 ## What's Next (in order)
 
@@ -158,12 +159,13 @@ Design phase. No code. Three foundational specs complete. Platform/vertical seam
   - Product tiers (0/1/2): what Karen's subscription includes (Stash / Prompt Cookbook / Hyperdrive)
   - Skill architecture tiers (1/2/3): floor management / quality control / production
   - In VERTICAL.md fields: `skill_tier` = skill tier; `product_tier_compatibility` = product tier.
-- **Foreman** is a ShopFloor **platform** role (NOT StoryEngine). `Roles/foreman/ROLE.md`.
+- **Foreman** is a ShopFloor **platform** role (NOT StoryEngine). `Roles/platform/foreman/ROLE.md`.
   Owns: vertical registration, global registry, team manifest, context index generation, halt
-  detection, session init. Tier 1 skills in `Skills/system/`.
-- **Managing Editor** stays Tier 3 (StoryEngine production). Routes Karen within StoryEngine.
+  detection, session init, skill design. Tier 1 skills in `Skills/platform/`. Also owns
+  `skill-designer` (Tier 3, platform production, Bill-facing only).
+- **Managing Editor** is Tier 3 (StoryEngine production). Routes Karen within StoryEngine.
   It is NOT a platform role. Foreman handles platform floor; Managing Editor handles StoryEngine
-  creative floor. Do not conflate.
+  creative floor. Do not conflate. Managing Editor does NOT own skill-designer — that is Foreman.
 - **VERTICAL.md** is the vertical registration contract. Lives at repo root. Foreman reads and
   validates it on session init. Declares: vertical ID, entity types + prefixes, per-file extensions,
   context indexes, roles, skills.
@@ -206,23 +208,33 @@ Design phase. No code. Three foundational specs complete. Platform/vertical seam
 
 ```
 ShopFloor/
-  VERTICAL.md           — StoryEngine registration contract (Foreman reads on session init) [not yet written]
+  VERTICAL.md           — StoryEngine registration contract (Foreman reads on session init)
   Design Documents/     — Storage Spec, Platform Spec, Skill Designer Spec, ERD, Seed Data
   Data Structures/      — 49 schema templates (StoryEngine vertical domain)
     Noun Data Structures/   Character, Wound, Scene, Location, Particle, etc.
     Verb Data Structures/   Arc, Chapter, Continuity, Pacing, etc.
     Scaffolding/            Act, Beat, Conformance, Framework, etc.
     Frameworks/             Three-Act, Save the Cat, Seven Point, Story Grid, Hero's Journey
-    Operations/             Role_Record, Scorecard, Team_Manifest, System_Manifest
+    Operations/             Project, Role_Record, Scorecard, Team_Manifest, System_Manifest
   Assets/               — reference graphics (NotebooksApp study)
   Skills/               — SKILL.md files
-    system/             — Tier 1: platform floor management (Foreman's skills — not yet written)
-    rules/              — Tier 2: quality control (not yet written)
-    creative/           — Tier 3: production (starting-lineup, greenlight-review, skill-designer complete)
-    pending/            — Karen-authored skills awaiting review
+    platform/           — ShopFloor platform skills (Foreman owns)
+                            vertical-registration (Tier 1), skill-designer (Tier 3)
+    verticals/          — vertical-owned skills, grouped by vertical ID
+      storyengine/
+        creative/       — Tier 3 production: starting-lineup, greenlight-review
+        rules/          — Tier 2 quality control (not yet written)
+    pending/            — Karen-authored or unreviewed skills awaiting assignment
   Roles/                — ROLE.md files
-    foreman/            — ShopFloor platform Foreman [not yet written]
-    acquisitions-editor/ developmental-editor/ proofreader/ publisher/ managing-editor/
+    platform/           — ShopFloor platform roles
+      foreman/          — Foreman: vertical registration, session init, skill design
+    verticals/          — vertical roles, grouped by vertical ID
+      storyengine/
+        acquisitions-editor/
+        developmental-editor/
+        managing-editor/
+        proofreader/
+        publisher/
   Notes/                — Session records (written at end of every session)
   App/                  — future Xcode/Swift project
   .shopfloor/           — hidden platform infrastructure (not committed; generated at runtime)

@@ -1,49 +1,22 @@
 {
-  "generated": "2026-04-14",
+  "generated": "2026-04-15",
   "schema_version": "1.0",
   "description": "Registry of all installed and pending skills. Used by the Skill Designer to check for ID uniqueness and responsibility overlap. Used by session-init to load context fingerprints. Used by routing to resolve skill invocations.",
-  "skills": [
 
+  "platform_skills": [
     {
-      "skillId": "starting-lineup",
-      "skillName": "Starting Line-Up",
-      "version": "1.0",
-      "tier": 3,
-      "role": "acquisitions_editor",
+      "skillId": "vertical-registration",
+      "skillName": "Vertical Registration",
+      "version": "1.1",
+      "tier": 1,
+      "role": "foreman",
       "deploymentTargets": ["mobile", "desktop"],
-      "path": "Skills/creative/starting-lineup/SKILL.md",
+      "path": "Skills/platform/vertical-registration/SKILL.md",
       "status": "active",
-      "purpose": "Develop a raw particle into a Starting Line-Up through Swain element intake — the pre-greenlight artifact pitched to the Publisher.",
+      "purpose": "Read and validate VERTICAL.md; write global-registry.json entry; report registration errors per the platform error taxonomy.",
       "contextFingerprint": {
-        "objectModel": [
-          "Project:active",
-          "Particle:linked",
-          "Starting_Lineup:linked"
-        ],
-        "system": ["manifest", "session-state"]
-      },
-      "authoredBy": "bill",
-      "dateCreated": "2026-04-14",
-      "dateModified": "2026-04-14"
-    },
-
-    {
-      "skillId": "greenlight-review",
-      "skillName": "Greenlight Review",
-      "version": "1.0",
-      "tier": 3,
-      "role": "publisher",
-      "deploymentTargets": ["mobile", "desktop"],
-      "path": "Skills/creative/greenlight-review/SKILL.md",
-      "status": "active",
-      "purpose": "Evaluate a pitched Starting Line-Up against four criteria and render a go/no-go decision for the Publisher.",
-      "contextFingerprint": {
-        "objectModel": [
-          "Starting_Lineup:pitched",
-          "Project:current",
-          "Project:portfolio_summary"
-        ],
-        "system": ["manifest", "session-state", "system-manifest"]
+        "objectModel": [],
+        "system": ["VERTICAL.md", "global-registry", "team-manifest"]
       },
       "authoredBy": "bill",
       "dateCreated": "2026-04-14",
@@ -53,21 +26,75 @@
     {
       "skillId": "skill-designer",
       "skillName": "Skill Designer",
-      "version": "1.0",
+      "version": "1.1",
       "tier": 3,
-      "role": "managing_editor",
+      "role": "foreman",
       "deploymentTargets": ["desktop"],
-      "path": "Skills/creative/skill-designer/SKILL.md",
+      "path": "Skills/platform/skill-designer/SKILL.md",
       "status": "active",
-      "purpose": "Build, validate, improve, and review SKILL.md files. Operates in four modes: new skill (Bill), new skill (Karen), improve existing, review pending.",
+      "purpose": "Build, validate, improve, and review SKILL.md files for any vertical or platform role. Operates in four modes: new skill (Bill), new skill (Karen draft), improve existing, review pending.",
       "contextFingerprint": {
         "objectModel": [],
         "system": ["manifest", "session-state", "schema_index", "role_index", "skill_registry"]
       },
       "authoredBy": "bill",
       "dateCreated": "2026-04-14",
-      "dateModified": "2026-04-14"
+      "dateModified": "2026-04-15"
     }
+  ],
 
+  "vertical_skills": [
+    {
+      "vertical": "storyengine",
+      "skills": [
+
+        {
+          "skillId": "starting-lineup",
+          "skillName": "Starting Line-Up",
+          "version": "1.0",
+          "tier": 3,
+          "role": "acquisitions_editor",
+          "deploymentTargets": ["mobile", "desktop"],
+          "path": "Skills/verticals/storyengine/creative/starting-lineup/SKILL.md",
+          "status": "active",
+          "purpose": "Develop a raw particle into a Starting Line-Up through Swain element intake — the pre-greenlight artifact pitched to the Publisher.",
+          "contextFingerprint": {
+            "objectModel": [
+              "Project:active",
+              "Particle:linked",
+              "Starting_Lineup:linked"
+            ],
+            "system": ["manifest", "session-state"]
+          },
+          "authoredBy": "bill",
+          "dateCreated": "2026-04-14",
+          "dateModified": "2026-04-14"
+        },
+
+        {
+          "skillId": "greenlight-review",
+          "skillName": "Greenlight Review",
+          "version": "1.0",
+          "tier": 3,
+          "role": "publisher",
+          "deploymentTargets": ["mobile", "desktop"],
+          "path": "Skills/verticals/storyengine/creative/greenlight-review/SKILL.md",
+          "status": "active",
+          "purpose": "Evaluate a pitched Starting Line-Up against four criteria and render a go/no-go decision for the Publisher.",
+          "contextFingerprint": {
+            "objectModel": [
+              "Starting_Lineup:pitched",
+              "Project:current",
+              "Project:portfolio_summary"
+            ],
+            "system": ["manifest", "session-state", "system-manifest"]
+          },
+          "authoredBy": "bill",
+          "dateCreated": "2026-04-14",
+          "dateModified": "2026-04-14"
+        }
+
+      ]
+    }
   ]
 }

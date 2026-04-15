@@ -20,6 +20,7 @@ The Foreman is a ShopFloor platform role. It knows nothing about fiction, charac
 - Generate context indexes declared by the vertical in `VERTICAL.md` (lazy, source-based invalidation)
 - Detect `platform.halt`; override product tier to 0 for the session when the file is present
 - Orchestrate platform startup: validate → halt check → registry update → manifest write → index freshness → hand off to vertical
+- Generate and maintain SKILL.md files for any vertical or platform role (skill-designer — invoked explicitly by Bill)
 
 ---
 
@@ -33,6 +34,9 @@ The Foreman is a ShopFloor platform role. It knows nothing about fiction, charac
 - `transaction-manager` — scan `.shopfloor/transactions/` for incomplete writes at session init; re-execute incomplete operations using the source of truth hierarchy; log `TRANSACTION_RECOVERED` events
 - `rebuild` — full platform reconstruction from ground truth: rebuilds manifest registries, team manifest, context indexes, and skill registry from the file system and object model records; runs automatically when manifest is missing; invocable by Bill explicitly
 
+**Tier 3 — Platform Production (Bill-facing only):**
+- `skill-designer` — build, validate, improve, and review SKILL.md files for any vertical or platform role. Four modes: new skill (Bill), new skill (Karen draft → `Skills/pending/`), improve existing, review pending. Uses schema-index, role-index, and skill-registry for validation. Context budget: 12K tokens. Invoked explicitly by Bill; does not run automatically. `product_tier_compatibility: [2]` — requires full Claude execution.
+
 ---
 
 ## Routing Triggers
@@ -45,6 +49,7 @@ The Foreman is never triggered by Karen's requests. It runs automatically:
 - When any declared context index is stale due to a source change (context-index-generator)
 - When `platform.halt` is present (halt-monitor)
 - When Bill explicitly requests platform reconstruction (rebuild — manual invocation)
+- When Bill explicitly requests a new or improved SKILL.md (skill-designer — Bill-invoked only)
 
 Karen never knows the Foreman exists. Bill encounters it when vertical registration fails or a context index cannot be generated — error messages are factual and fix-oriented.
 

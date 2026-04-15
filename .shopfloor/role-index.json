@@ -1,12 +1,41 @@
 {
-  "generated": "2026-04-14",
+  "generated": "2026-04-15",
   "schema_version": "1.0",
-  "description": "Compact reference index of all ShopFloor role definitions. Used by the Skill Designer to validate role ownership, routing, and write access without loading full ROLE.md files. Maintained by session-init (Tier 1). Regenerate when Team Manifest changes.",
+  "description": "Compact reference index of all ShopFloor role definitions. Used by the Skill Designer to validate role ownership, routing, and write access without loading full ROLE.md files. Maintained by session-init (Tier 1). Regenerate when Team Manifest changes. Includes both platform roles (Roles/platform/) and StoryEngine vertical roles (Roles/verticals/storyengine/).",
   "roles": [
+
+    {
+      "roleID": "foreman",
+      "roleName": "Foreman",
+      "layer": "platform",
+      "path": "Roles/platform/foreman/ROLE.md",
+      "domain": "Vertical registration, session init orchestration, context index generation, halt detection, global and per-project registry management, skill design",
+      "responsibilities": [
+        "read and validate VERTICAL.md at session start",
+        "write and maintain global-registry.json",
+        "write and maintain team-manifest.json",
+        "generate context indexes declared in VERTICAL.md",
+        "detect platform.halt and enforce tier-0 override",
+        "orchestrate platform startup sequence",
+        "generate and maintain SKILL.md files via skill-designer (Bill-invoked)"
+      ],
+      "tier1Skills": ["vertical-registration", "session-init", "context-index-generator", "halt-monitor", "transaction-manager", "rebuild"],
+      "tier2Skills": [],
+      "tier3Skills": ["skill-designer"],
+      "writableSchemas": ["platform — global-registry.json, team-manifest.json, context indexes"],
+      "pipelinePosition": "Session start — runs before any vertical role",
+      "voiceTone": "No voice toward Karen. Error output to Bill: one line per error — code, what failed, what to fix.",
+      "routingTriggers": [],
+      "fallbackRole": false,
+      "notes": "Platform role. Invisible to Karen. skill-designer is Tier 3 but platform-owned — invoked explicitly by Bill only, never automatic. product_tier_compatibility: [2] for skill-designer; all Tier 1 skills run at [0, 1, 2]."
+    },
 
     {
       "roleID": "acquisitions_editor",
       "roleName": "Acquisitions Editor",
+      "layer": "vertical",
+      "vertical": "storyengine",
+      "path": "Roles/verticals/storyengine/acquisitions-editor/ROLE.md",
       "tier": 3,
       "domain": "Raw material evaluation, idea development, pre-greenlight development, Swain Starting Line-Up",
       "responsibilities": [
@@ -32,6 +61,9 @@
     {
       "roleID": "publisher",
       "roleName": "Publisher",
+      "layer": "vertical",
+      "vertical": "storyengine",
+      "path": "Roles/verticals/storyengine/publisher/ROLE.md",
       "tier": 2,
       "domain": "Project greenlight, resource commitment, portfolio judgment, go/no-go decisions",
       "responsibilities": [
@@ -56,6 +88,9 @@
     {
       "roleID": "developmental_editor",
       "roleName": "Developmental Editor",
+      "layer": "vertical",
+      "vertical": "storyengine",
+      "path": "Roles/verticals/storyengine/developmental-editor/ROLE.md",
       "tier": 3,
       "domain": "Story structure, character psychology, narrative architecture, pacing, scene function, arc, beats, wound activation, thematic coherence",
       "responsibilities": [
@@ -94,6 +129,9 @@
     {
       "roleID": "proofreader",
       "roleName": "Proofreader",
+      "layer": "vertical",
+      "vertical": "storyengine",
+      "path": "Roles/verticals/storyengine/proofreader/ROLE.md",
       "tier": 3,
       "domain": "Correctness, consistency, style, timeline integrity, continuity, POV discipline, voice consistency, thread closure",
       "responsibilities": [
@@ -119,29 +157,28 @@
     {
       "roleID": "managing_editor",
       "roleName": "Managing Editor",
-      "tier": 1,
-      "domain": "Floor infrastructure, session management, routing, schema integrity, skill orchestration, performance tracking, project export, disaster recovery",
+      "layer": "vertical",
+      "vertical": "storyengine",
+      "path": "Roles/verticals/storyengine/managing-editor/ROLE.md",
+      "tier": 3,
+      "domain": "StoryEngine role routing, skill outcome tracking, skill library management, project export",
       "responsibilities": [
-        "initialize every session: load context, check manifest, assemble role stations per context fingerprints",
-        "route Karen requests to appropriate role based on pipeline_state — never parses intent",
-        "handle multi-project routing: read last_active_timestamp, ask disambiguation via active role (not ME directly)",
-        "detect and archive orphaned records",
-        "migrate schemas when templates update",
-        "maintain backup and recovery capability",
-        "export object model to human-readable markdown on request",
-        "sync skill files from pending/ to active skills/ (review gate before activation)",
+        "route Karen requests to appropriate StoryEngine role based on pipeline_state",
+        "handle multi-project routing: read last_active_timestamp, ask disambiguation via active role",
+        "sync skill files from Skills/pending/ to Skills/verticals/storyengine/creative/ (review gate before activation)",
+        "export StoryEngine object model to human-readable markdown on request",
         "update scorecards after every skill outcome",
-        "generate new SKILL.md files via skill-designer meta-skill (Bill-facing only)"
+        "pass Karen's unmet-need signals to Foreman's skill-designer (does not design skills itself)"
       ],
-      "tier1Skills": ["session-init", "orphan-manager", "schema-migrator", "backup-restore", "project-export", "skill-installer", "routing", "scorecard-updater"],
+      "tier1Skills": [],
       "tier2Skills": [],
-      "tier3Skills": ["skill-designer"],
-      "writableSchemas": ["Role_Record", "Scorecard", "Team_Manifest", "Project", "Particle", "Conformance_History", "Custom_Framework_Builder", "Framework_Selector", "Framework_Heros_Journey", "Framework_Save_The_Cat", "Framework_Seven_Point", "Framework_Story_Grid", "Framework_Three_Act"],
-      "pipelinePosition": "System-wide — present at every session start and end, invisible to Karen",
-      "voiceTone": "No voice toward Karen. System messages are factual and minimal (one sentence: what happened, what to do next). To Bill via skill-designer: technical and precise.",
+      "tier3Skills": ["routing", "scorecard-updater", "skill-installer", "project-export"],
+      "writableSchemas": ["Project", "Particle", "Conformance_History", "Custom_Framework_Builder", "Framework_Selector", "Framework_Heros_Journey", "Framework_Save_The_Cat", "Framework_Seven_Point", "Framework_Story_Grid", "Framework_Three_Act"],
+      "pipelinePosition": "Activates after Foreman clears platform — routes Karen to active StoryEngine role",
+      "voiceTone": "No direct voice toward Karen. Routes silently. When Karen expresses unmet need, warm intake ('Tell me more...') before passing to Foreman's skill-designer.",
       "routingTriggers": [],
       "fallbackRole": false,
-      "notes": "Never speaks to Karen directly. When disambiguation is needed, the active role for the most recently active project asks the question — ME determines which role is active (silent background work). Skill Designer is the one ME capability that surfaces above the waterline, and only for Bill."
+      "notes": "StoryEngine vertical role, NOT platform. Does not own skill-designer — that moved to Foreman (platform). Skill-installer manages the pending/ review gate for StoryEngine skills only."
     }
 
   ]

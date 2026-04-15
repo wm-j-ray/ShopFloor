@@ -22,19 +22,19 @@ maintainer: bill
 
 roles:
   - id: acquisitions-editor
-    path: Roles/acquisitions-editor/ROLE.md
+    path: Roles/verticals/storyengine/acquisitions-editor/ROLE.md
 
   - id: publisher
-    path: Roles/publisher/ROLE.md
+    path: Roles/verticals/storyengine/publisher/ROLE.md
 
   - id: developmental-editor
-    path: Roles/developmental-editor/ROLE.md
+    path: Roles/verticals/storyengine/developmental-editor/ROLE.md
 
   - id: proofreader
-    path: Roles/proofreader/ROLE.md
+    path: Roles/verticals/storyengine/proofreader/ROLE.md
 
   - id: managing-editor
-    path: Roles/managing-editor/ROLE.md
+    path: Roles/verticals/storyengine/managing-editor/ROLE.md
 
 
 # ── Skills ──────────────────────────────────────────────────────────────────
@@ -47,22 +47,19 @@ roles:
 
 skills:
   - id: starting-lineup
-    path: Skills/creative/starting-lineup/SKILL.md
+    path: Skills/verticals/storyengine/creative/starting-lineup/SKILL.md
     skill_tier: 3
     role: acquisitions-editor
     product_tier_compatibility: [1, 2]
 
   - id: greenlight-review
-    path: Skills/creative/greenlight-review/SKILL.md
+    path: Skills/verticals/storyengine/creative/greenlight-review/SKILL.md
     skill_tier: 3
     role: publisher
     product_tier_compatibility: [1, 2]
 
-  - id: skill-designer
-    path: Skills/creative/skill-designer/SKILL.md
-    skill_tier: 3
-    role: managing-editor
-    product_tier_compatibility: [2]
+# NOTE: skill-designer is a platform skill owned by the Foreman. It is not
+# declared here. Platform skills are not registered in vertical contracts.
 
 
 # ── Entity Types ────────────────────────────────────────────────────────────
@@ -302,6 +299,9 @@ indexes:
     sources:
       - Roles/
     output: .shopfloor/role-index.json
+    # NOTE: Roles/ is intentionally broad — covers both platform/ and verticals/
+    # subdirectories. The Foreman's own ROLE.md is included so the Skill Designer
+    # has full awareness of all roles when generating platform skills.
     format: compact
     invalidatedBy: sources
 

@@ -28,7 +28,18 @@
       "Bash(find \"/Users/wmjray/Desktop/WriteTrack/Data Structures/markdown\" -name \"*.md\" -exec basename {} .md \\\\;)",
       "Bash(find \"/Users/wmjray/Desktop/WriteTrack/Data Structures\" -name \"*.md\" -exec basename {} .md \\\\;)",
       "Skill(office-hours)",
-      "Skill(office-hours:*)"
+      "Skill(office-hours:*)",
+      "Bash(python3)",
+      "Bash(git add:*)",
+      "Bash(git commit -m ':*)",
+      "Bash(git push:*)",
+      "Bash(~/.claude/skills/gstack/bin/gstack-update-check)",
+      "Bash(rm /Users/wmjray/Documents/Development/ShopFloor/.git/index.lock)",
+      "Bash(~/.claude/skills/gstack/bin/gstack-config get:*)",
+      "Bash(~/.claude/skills/gstack/bin/gstack-learnings-search --limit 10)",
+      "Bash(git mv:*)",
+      "Bash(chmod +x /Users/wmjray/Documents/Development/ShopFloor/validate-vertical.sh)",
+      "Bash(./validate-vertical.sh)"
     ]
   }
 }
