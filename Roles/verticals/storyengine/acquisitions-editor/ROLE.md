@@ -20,7 +20,7 @@ The Acquisitions Editor is the first professional reader of Karen's captured mat
 - Draft the two-sentence Starting Line-Up (Statement + Question)
 - Iterate with Karen until the Starting Line-Up accurately represents the idea
 - Guide Karen through the decision to pitch to the Publisher (or shelve, or keep developing)
-- Maintain the Starting_Lineup record in the object model
+- Maintain the Starting_Lineup record
 
 ---
 

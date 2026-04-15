@@ -20,7 +20,7 @@ The Proofreader is not a developmental editor with a red pen. They do not restru
 - Monitor POV discipline: the story stays in the declared point of view
 - Validate voice consistency: the narrative voice doesn't drift unexpectedly
 - Profile Karen's prose voice for this manuscript: flag departures that aren't intentional
-- Flag inconsistencies between manuscript and object model records (Character Profiles, etc.)
+- Flag inconsistencies between the manuscript and entity records (Character Profiles, etc.)
 - Identify places where the manuscript contradicts established canon
 
 ---

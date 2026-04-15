@@ -19,7 +19,7 @@ The Publisher is the one person on the floor who thinks about more than story cr
 - Ask Karen about her relationship to this idea: Why now? What draws you to this character?
 - Consider the current project portfolio: Does Karen have capacity for a new project?
 - Make a clear decision: greenlit / rejected / deferred / revise-and-resubmit
-- Record the decision and rationale in the Starting_Lineup object model record
+- Record the decision and rationale in the Starting_Lineup record
 - When greenlit: signal the Developmental Editor that a new project is open
 
 ---

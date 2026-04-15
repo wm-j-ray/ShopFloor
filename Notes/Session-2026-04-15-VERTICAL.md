@@ -118,3 +118,120 @@ The CLAUDE.md "What's Next" list is now updated through item 16.
 |------|--------|-------|
 | `VERTICAL.md` | Created | StoryEngine registration contract |
 | `.shopfloor/schema-index.json` | Updated | Platform entity entries corrected |
+
+---
+
+# Session Continuation — Directory Restructure + Seam Audit
+**Date:** 2026-04-15 (same session, continued)
+**Topic:** Roles/Skills directory restructure; skill-designer platform migration; seam violation audit
+
+---
+
+## What We Did
+
+Recognized the `Roles/` and `Skills/` flat directory structure didn't reflect the platform/vertical seam. Restructured both trees to make the seam visible in the filesystem, moved skill-designer from Managing Editor to Foreman, created a Tier 0 validation test, and audited all 5 StoryEngine ROLE.md files for seam violations.
+
+---
+
+## Decisions Made
+
+### 7. Roles Directory Restructured to Reflect Platform/Vertical Seam
+
+**Decision:** Reorganized `Roles/` into:
+```
+Roles/
+  platform/
+    foreman/ROLE.md
+  verticals/
+    storyengine/
+      acquisitions-editor/ROLE.md
+      publisher/ROLE.md
+      developmental-editor/ROLE.md
+      proofreader/ROLE.md
+      managing-editor/ROLE.md
+```
+
+**Reasoning:** With only one Foreman and five StoryEngine roles today, a flat `Roles/` directory reads like a hairball. The platform/vertical split is the most important architectural boundary in the system — it should be visible in the filesystem. Future verticals (e.g., storyengine-v2, a music vertical) slot under `Roles/verticals/[vertical-id]/` without disturbing the platform structure.
+
+### 8. Skills Directory Restructured to Match
+
+**Decision:** Reorganized `Skills/` into:
+```
+Skills/
+  platform/
+    vertical-registration/SKILL.md
+    skill-designer/SKILL.md
+  verticals/
+    storyengine/
+      creative/
+        starting-lineup/SKILL.md
+        greenlight-review/SKILL.md
+  pending/
+    (Karen-authored skills awaiting review)
+```
+
+**Reasoning:** Same governing principle — directory structure should make the platform/vertical boundary visible. The old `Skills/system/`, `Skills/rules/`, `Skills/creative/` taxonomy organized by tier, but tier is an implementation detail. Platform vs. vertical is the primary architectural distinction.
+
+### 9. skill-designer Moved to Foreman (Platform)
+
+**Decision:** `skill-designer` SKILL.md moved from `Skills/creative/` (Managing Editor, StoryEngine vertical) to `Skills/platform/` (Foreman, platform). ROLE.md updated: `role: managing-editor` → `role: foreman`. Foreman ROLE.md updated to include skill-designer in Skills and Responsibilities.
+
+**Reasoning:** The skill-designer generates SKILL.md files for any role — StoryEngine roles, future vertical roles, platform roles. A skill that crosses vertical boundaries cannot be owned by a vertical role. Bill invokes it explicitly; it's not part of StoryEngine's creative pipeline. The platform/vertical governing principle resolves this unambiguously.
+
+**skill-designer stays Tier 3:** It needs the 12K token context budget (Bottleneck 19.7 — most context-hungry operation in the system). Tier classification is about work type and token budget, not ownership layer. Foreman can own Tier 3 skills.
+
+**product_tier_compatibility: [2] only** — skill design requires native AI execution. No sensible Tier 1 (Prompt Cookbook) version exists. Bill-only invocation.
+
+### 10. Tier 0 Test — validate-vertical.sh
+
+**Decision:** Created `validate-vertical.sh` at repo root. Manually validates all paths declared in VERTICAL.md — same PATH_NOT_FOUND checks the Foreman's `vertical-registration` skill would do at runtime.
+
+**Why a shell script:** The insight arose from the question "couldn't I design a skill that validates the vertical?" The answer is: yes, but a skill is overkill for Tier 0. A shell script runs before any AI context is loaded, has no dependencies, and exits 0 on pass / 1 on failure. It's the CI safety net, not the runtime tool.
+
+**22-check structure:** role paths (5), skill paths (2), schema paths (5), index source paths (6), platform skill/role paths (3) + contract file (1). All 22 passed on first run after directory restructure.
+
+### 11. Seam Violation Audit — Item 18
+
+Audited all 5 StoryEngine ROLE.md files for language that crosses the platform/vertical seam. Three violations found and fixed:
+
+| File | Violation | Fix |
+|------|-----------|-----|
+| `acquisitions-editor/ROLE.md` | "Maintain the Starting_Lineup record **in the object model**" | Removed "in the object model" — the vertical doesn't address platform internals |
+| `publisher/ROLE.md` | "**Starting_Lineup object model record**" | Removed "object model" — same principle |
+| `proofreader/ROLE.md` | "inconsistencies between the manuscript and **object model** records" | "object model records" → "entity records" — StoryEngine knows about entities, not the object model |
+
+**Developmental Editor:** Clean. No seam violations.
+
+**Managing Editor:** Updated separately — removed skill-designer from Skills/Responsibilities (it moved to Foreman); updated pending/ path; updated routing trigger to reflect ME passes signals to Foreman's skill-designer rather than designing skills itself.
+
+---
+
+## Updated .shopfloor Index Files
+
+Both `.shopfloor/role-index.json` and `.shopfloor/skill-registry.json` updated to reflect:
+- New file paths under `platform/` and `verticals/storyengine/` layouts
+- Foreman entry added to role-index (was missing)
+- skill-registry restructured into `platform_skills` and `vertical_skills` sections
+- managing_editor tier corrected: 1 → 3 (was a pre-existing error)
+- skill-designer removed from managing_editor entry; added to foreman entry
+
+---
+
+## Files Changed This Session (Continuation)
+
+| File | Action | Notes |
+|------|--------|-------|
+| `Roles/platform/foreman/ROLE.md` | Moved + Modified | Added skill-designer (Tier 3) to Skills and Responsibilities |
+| `Roles/verticals/storyengine/acquisitions-editor/ROLE.md` | Moved + Modified | Seam fix: removed "in the object model" |
+| `Roles/verticals/storyengine/publisher/ROLE.md` | Moved + Modified | Seam fix: removed "object model" |
+| `Roles/verticals/storyengine/proofreader/ROLE.md` | Moved + Modified | Seam fix: "object model records" → "entity records" |
+| `Roles/verticals/storyengine/developmental-editor/ROLE.md` | Moved | No seam violations |
+| `Roles/verticals/storyengine/managing-editor/ROLE.md` | Moved + Modified | Removed skill-designer; updated pending/ path; updated routing trigger |
+| `Skills/platform/vertical-registration/SKILL.md` | Moved | No content changes |
+| `Skills/platform/skill-designer/SKILL.md` | Moved + Modified | role: foreman; date_modified updated |
+| `Skills/verticals/storyengine/creative/starting-lineup/SKILL.md` | Moved | No content changes |
+| `Skills/verticals/storyengine/creative/greenlight-review/SKILL.md` | Moved | No content changes |
+| `.shopfloor/role-index.json` | Updated | Foreman added; paths corrected; tier/skill fixes |
+| `.shopfloor/skill-registry.json` | Updated | Restructured platform_skills/vertical_skills; paths corrected |
+| `validate-vertical.sh` | Created | 22-check Tier 0 path validation script |
+| `CLAUDE.md` | Updated | Directory structure, current status, key decisions, What's Next |

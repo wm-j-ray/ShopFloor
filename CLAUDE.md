@@ -130,14 +130,18 @@ Design phase. No code. Three foundational specs complete. Platform/vertical seam
 11. ~~Write `Skills/creative/greenlight-review/SKILL.md`~~ ✓ Complete (Publisher, Tier 3, 2026-04-14)
 12. ~~Write ShopFloor Platform Spec~~ ✓ Complete (`Design Documents/ShopFloor Platform Spec.md`, 2026-04-14)
 
+13. ~~Write session notes for Platform Spec session~~ ✓ Complete (`Notes/Session-2026-04-14-Platform-Spec.md`)
+14. ~~Write `Roles/foreman/ROLE.md`~~ ✓ Complete (`Roles/platform/foreman/ROLE.md`, 2026-04-14)
+15. ~~Write `Skills/system/vertical-registration/SKILL.md`~~ ✓ Complete (`Skills/platform/vertical-registration/SKILL.md`, 2026-04-14)
+16. ~~Write `VERTICAL.md`~~ ✓ Complete (repo root, 2026-04-15)
+17. ~~Restructure `Roles/` and `Skills/` to reflect platform/vertical seam~~ ✓ Complete (2026-04-15). Added `validate-vertical.sh`.
+18. ~~Seam violations audit — 5 ROLE.md files~~ ✓ Complete (2026-04-15). Three minor "object model" phrase fixes in AE, Publisher, Proofreader. Developmental Editor and Managing Editor clean.
+
 **Up next:**
-13. Write session notes: `Notes/Session-2026-04-14-Platform-Spec.md` — decisions from today's platform spec session
-14. Write `Roles/foreman/ROLE.md` — ShopFloor platform Foreman role (Tier 1, platform not vertical)
-15. Write `Skills/system/vertical-registration/SKILL.md` — Foreman's first Tier 1 skill
-16. Write `VERTICAL.md` at repo root — StoryEngine's registration declaration (vertical contract Foreman reads)
-17. Write StoryEngine Spec — all §18.2 vertical concepts from Platform Spec (fiction domain, five roles, entity types, particle extensions)
-18. Update existing 5 ROLE.md files — remove platform language from Managing Editor; audit others for seam violations
-19. Add `vertical: storyengine` frontmatter to all 49 fiction-domain schema templates
+19. Write StoryEngine Spec — all §18.2 vertical concepts from Platform Spec (fiction domain, five roles, entity types, particle extensions)
+20. Add `vertical: storyengine` frontmatter to all 49 fiction-domain schema templates
+21. Write remaining Foreman Tier 1 SKILL.md files — `session-init`, `context-index-generator`, `halt-monitor`, `transaction-manager`, `rebuild` (unblocks actual platform execution)
+22. Design `affinity-generator` platform skill — on-demand cross-vertical content relatedness (Foreman Tier 1, seeds from 2026-04-15 session)
 
 ## Session Protocol (Mandatory — Established 2026-04-14)
 
