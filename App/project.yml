@@ -1,0 +1,46 @@
+name: Capture
+options:
+  bundleIdPrefix: com.shopfloor
+  deploymentTarget:
+    iOS: "17.0"
+  xcodeVersion: "16"
+  createIntermediateGroups: true
+  indentWidth: 4
+  tabWidth: 4
+  developmentLanguage: en
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    IPHONEOS_DEPLOYMENT_TARGET: "17.0"
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+
+targets:
+  Capture:
+    type: application
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: Capture
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.shopfloor.capture
+        INFOPLIST_FILE: Capture/Info.plist
+        CODE_SIGN_ENTITLEMENTS: Capture/Capture.entitlements
+    scheme:
+      testTargets:
+        - CaptureTests
+
+  CaptureTests:
+    type: bundle.unit-test
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: CaptureTests
+    dependencies:
+      - target: Capture
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.shopfloor.captureTests
+        GENERATE_INFOPLIST_FILE: YES
