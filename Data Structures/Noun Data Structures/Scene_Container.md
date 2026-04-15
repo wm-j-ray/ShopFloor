@@ -1,6 +1,7 @@
 ---
 schema_type: scene_container
 category: noun
+vertical: storyengine
 template_version: "1.1"
 profile_version: ""
 date_instantiated: ""

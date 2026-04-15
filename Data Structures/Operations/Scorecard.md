@@ -1,6 +1,7 @@
 ---
 schema_type: scorecard
 category: operations
+vertical: platform
 template_version: "1.0"
 profile_version: ""
 date_instantiated: ""

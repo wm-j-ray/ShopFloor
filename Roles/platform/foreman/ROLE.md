@@ -34,6 +34,9 @@ The Foreman is a ShopFloor platform role. It knows nothing about fiction, charac
 - `transaction-manager` — scan `.shopfloor/transactions/` for incomplete writes at session init; re-execute incomplete operations using the source of truth hierarchy; log `TRANSACTION_RECOVERED` events
 - `rebuild` — full platform reconstruction from ground truth: rebuilds manifest registries, team manifest, context indexes, and skill registry from the file system and object model records; runs automatically when manifest is missing; invocable by Bill explicitly
 
+**Tier 2 — Platform Analysis (invoked by vertical roles):**
+- `affinity-generator` — find connections between particles across five types: thematic, tonal, character, imagistic, structural. Two modes: QUERY (return known affinities from index) and COMPUTE (run AI analysis against candidate particles). Invoked mid-session via `platform_dependencies` in a vertical skill's contextFingerprint. Accumulates results in `.shopfloor/affinity-index.json`. `product_tier_compatibility: [2]` — requires AI. First instance of a platform Tier 2 skill.
+
 **Tier 3 — Platform Production (Bill-facing only):**
 - `skill-designer` — build, validate, improve, and review SKILL.md files for any vertical or platform role. Four modes: new skill (Bill), new skill (Karen draft → `Skills/pending/`), improve existing, review pending. Uses schema-index, role-index, and skill-registry for validation. Context budget: 12K tokens. Invoked explicitly by Bill; does not run automatically. `product_tier_compatibility: [2]` — requires full Claude execution.
 

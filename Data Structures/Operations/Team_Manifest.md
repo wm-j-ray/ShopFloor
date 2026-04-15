@@ -1,6 +1,7 @@
 ---
 schema_type: team_manifest
 category: operations
+vertical: platform
 template_version: "2.0"
 profile_version: ""
 date_instantiated: ""

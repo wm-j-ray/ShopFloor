@@ -1,6 +1,7 @@
 ---
 schema_type: particle_metadata
 category: noun
+vertical: storyengine
 template_version: "2.0"
 profile_version: ""
 date_instantiated: ""

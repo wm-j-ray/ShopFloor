@@ -5,6 +5,121 @@
 
   "platform_skills": [
     {
+      "skillId": "affinity-generator",
+      "skillName": "Affinity Generator",
+      "version": "2.0",
+      "tier": 2,
+      "role": "foreman",
+      "deploymentTargets": ["mobile", "desktop"],
+      "path": "Skills/platform/affinity-generator/SKILL.md",
+      "status": "draft",
+      "product_tier_compatibility": [2],
+      "purpose": "Find connections between particles across five affinity types (thematic, tonal, character, imagistic, structural). Two modes: QUERY (return known affinities) and COMPUTE (run AI analysis). Mid-session, invoked via platform_dependencies in a vertical skill's contextFingerprint.",
+      "contextFingerprint": {
+        "objectModel": [],
+        "system": ["per-file-metadata", "particle-content", "affinity-index", "session-state"]
+      },
+      "authoredBy": "bill",
+      "dateCreated": "2026-04-15",
+      "dateModified": "2026-04-15"
+    },
+
+    {
+      "skillId": "session-init",
+      "skillName": "Session Init",
+      "version": "1.0",
+      "tier": 1,
+      "role": "foreman",
+      "deploymentTargets": ["mobile", "desktop"],
+      "path": "Skills/platform/session-init/SKILL.md",
+      "status": "draft",
+      "purpose": "Ordered startup sequence: halt-monitor → transaction-manager → vertical-registration → context-index-generator → manifest check → session state → role station assembly → hand to vertical coordinator.",
+      "contextFingerprint": {
+        "objectModel": [],
+        "system": ["VERTICAL.md", "manifest", "session-state", "global-registry", "transactions-directory"]
+      },
+      "authoredBy": "bill",
+      "dateCreated": "2026-04-15",
+      "dateModified": "2026-04-15"
+    },
+
+    {
+      "skillId": "halt-monitor",
+      "skillName": "Halt Monitor",
+      "version": "1.0",
+      "tier": 1,
+      "role": "foreman",
+      "deploymentTargets": ["mobile", "desktop"],
+      "path": "Skills/platform/halt-monitor/SKILL.md",
+      "status": "draft",
+      "purpose": "Check for platform.halt at product root; if present, override product tier to 0 and abort session-init immediately.",
+      "contextFingerprint": {
+        "objectModel": [],
+        "system": ["platform.halt", "session-state"]
+      },
+      "authoredBy": "bill",
+      "dateCreated": "2026-04-15",
+      "dateModified": "2026-04-15"
+    },
+
+    {
+      "skillId": "transaction-manager",
+      "skillName": "Transaction Manager",
+      "version": "1.0",
+      "tier": 1,
+      "role": "foreman",
+      "deploymentTargets": ["mobile", "desktop"],
+      "path": "Skills/platform/transaction-manager/SKILL.md",
+      "status": "draft",
+      "purpose": "Scan .shopfloor/transactions/ for pending transactions; recover each using idempotent re-execution; log TRANSACTION_RECOVERED per recovery.",
+      "contextFingerprint": {
+        "objectModel": [],
+        "system": ["transactions-directory", "object-model", "manifest"]
+      },
+      "authoredBy": "bill",
+      "dateCreated": "2026-04-15",
+      "dateModified": "2026-04-15"
+    },
+
+    {
+      "skillId": "context-index-generator",
+      "skillName": "Context Index Generator",
+      "version": "1.0",
+      "tier": 1,
+      "role": "foreman",
+      "deploymentTargets": ["mobile", "desktop"],
+      "path": "Skills/platform/context-index-generator/SKILL.md",
+      "status": "draft",
+      "purpose": "Generate or refresh context indexes declared in VERTICAL.md. Lazy: regenerates only when source files have changed since last generatedAt timestamp.",
+      "contextFingerprint": {
+        "objectModel": [],
+        "system": ["VERTICAL.md", "index-sources", "context-indexes"]
+      },
+      "authoredBy": "bill",
+      "dateCreated": "2026-04-15",
+      "dateModified": "2026-04-15"
+    },
+
+    {
+      "skillId": "rebuild",
+      "skillName": "Rebuild",
+      "version": "1.0",
+      "tier": 1,
+      "role": "foreman",
+      "deploymentTargets": ["mobile", "desktop"],
+      "path": "Skills/platform/rebuild/SKILL.md",
+      "status": "draft",
+      "purpose": "Full platform reconstruction from ground truth: file registry, object model registry, orphan registry, team-manifest, context indexes, skill-registry. Triggered automatically when manifest.json is missing or explicitly by Bill.",
+      "contextFingerprint": {
+        "objectModel": [],
+        "system": ["file-system", "per-file-metadata", "object-model", "VERTICAL.md", "skills-directory"]
+      },
+      "authoredBy": "bill",
+      "dateCreated": "2026-04-15",
+      "dateModified": "2026-04-15"
+    },
+
+    {
       "skillId": "vertical-registration",
       "skillName": "Vertical Registration",
       "version": "1.1",

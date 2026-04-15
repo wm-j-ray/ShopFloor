@@ -1,6 +1,7 @@
 ---
 schema_type: character_profile
 category: noun
+vertical: storyengine
 template_version: "2.1"
 profile_version: ""
 date_instantiated: ""

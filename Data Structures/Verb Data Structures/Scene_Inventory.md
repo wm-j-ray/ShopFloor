@@ -1,6 +1,7 @@
 ---
 schema_type: scene_inventory
 category: verb
+vertical: storyengine
 template_version: "1.2"
 profile_version: ""
 date_instantiated: ""

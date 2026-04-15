@@ -39,7 +39,8 @@
       "Bash(~/.claude/skills/gstack/bin/gstack-learnings-search --limit 10)",
       "Bash(git mv:*)",
       "Bash(chmod +x /Users/wmjray/Documents/Development/ShopFloor/validate-vertical.sh)",
-      "Bash(./validate-vertical.sh)"
+      "Bash(./validate-vertical.sh)",
+      "Bash(bash validate-vertical.sh)"
     ]
   }
 }

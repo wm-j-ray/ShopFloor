@@ -19,7 +19,7 @@
         "orchestrate platform startup sequence",
         "generate and maintain SKILL.md files via skill-designer (Bill-invoked)"
       ],
-      "tier1Skills": ["vertical-registration", "session-init", "context-index-generator", "halt-monitor", "transaction-manager", "rebuild"],
+      "tier1Skills": ["session-init", "halt-monitor", "transaction-manager", "vertical-registration", "context-index-generator", "rebuild"],
       "tier2Skills": [],
       "tier3Skills": ["skill-designer"],
       "writableSchemas": ["platform — global-registry.json, team-manifest.json, context indexes"],

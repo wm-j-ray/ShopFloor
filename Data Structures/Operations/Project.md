@@ -1,6 +1,7 @@
 ---
 schema_type: project
 category: operations
+vertical: storyengine
 template_version: "1.0"
 profile_version: ""
 date_instantiated: ""

@@ -1,6 +1,7 @@
 ---
 schema_type: story_grid
 category: framework
+vertical: storyengine
 template_version: "1.0"
 profile_version: ""
 date_instantiated: ""

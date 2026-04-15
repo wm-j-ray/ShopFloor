@@ -1,6 +1,7 @@
 ---
 schema_type: plot_thread_tracker
 category: verb
+vertical: storyengine
 template_version: "1.1"
 profile_version: ""
 date_instantiated: ""

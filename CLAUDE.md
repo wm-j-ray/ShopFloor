@@ -109,11 +109,12 @@ Design phase. No code. Three foundational specs complete. Platform/vertical seam
 | April 14 Skill Designer | `Notes/Session-2026-04-14-Skill-Designer.md` | Complete |
 | April 14 Platform Spec | `Notes/Session-2026-04-14-Platform-Spec.md` | Pending write |
 
-49 data structure schema templates live in `Data Structures/` (all have `writable_by` in frontmatter as of 2026-04-14).
+49 data structure schema templates live in `Data Structures/` (all have `writable_by` and `vertical` in frontmatter as of 2026-04-15).
 6 ROLE.md files: 5 StoryEngine vertical roles in `Roles/verticals/storyengine/` + Foreman platform role in `Roles/platform/foreman/`.
-4 SKILL.md files: `starting-lineup` (AE, Tier 3), `greenlight-review` (Publisher, Tier 3) in `Skills/verticals/storyengine/creative/`; `skill-designer` (Foreman, Tier 3, platform) and `vertical-registration` (Foreman, Tier 1) in `Skills/platform/`.
+9 SKILL.md files: `starting-lineup` (AE, Tier 3), `greenlight-review` (Publisher, Tier 3) in `Skills/verticals/storyengine/creative/`; 7 platform skills in `Skills/platform/`: `session-init`, `halt-monitor`, `transaction-manager`, `vertical-registration`, `context-index-generator`, `rebuild` (all Foreman Tier 1) + `skill-designer` (Foreman Tier 3).
 3 index files in `.shopfloor/`: `schema-index.json`, `role-index.json`, `skill-registry.json`.
 `VERTICAL.md` written 2026-04-15 at repo root.
+`StoryEngine Spec.md` written 2026-04-15 in `Design Documents/`.
 
 ## What's Next (in order)
 
@@ -137,11 +138,13 @@ Design phase. No code. Three foundational specs complete. Platform/vertical seam
 17. ~~Restructure `Roles/` and `Skills/` to reflect platform/vertical seam~~ ✓ Complete (2026-04-15). Added `validate-vertical.sh`.
 18. ~~Seam violations audit — 5 ROLE.md files~~ ✓ Complete (2026-04-15). Three minor "object model" phrase fixes in AE, Publisher, Proofreader. Developmental Editor and Managing Editor clean.
 
-**Up next:**
-19. Write StoryEngine Spec — all §18.2 vertical concepts from Platform Spec (fiction domain, five roles, entity types, particle extensions)
-20. Add `vertical: storyengine` frontmatter to all 49 fiction-domain schema templates
-21. Write remaining Foreman Tier 1 SKILL.md files — `session-init`, `context-index-generator`, `halt-monitor`, `transaction-manager`, `rebuild` (unblocks actual platform execution)
-22. Design `affinity-generator` platform skill — on-demand cross-vertical content relatedness (Foreman Tier 1, seeds from 2026-04-15 session)
+19. ~~Write StoryEngine Spec~~ ✓ Complete (`Design Documents/StoryEngine Spec.md`, 2026-04-15). All §18.2 vertical concepts: five roles, entity types, particle extensions, particleStatus lifecycle, session state payload, Role_Record activityLog payload, object model record structure.
+20. ~~Add `vertical: storyengine` frontmatter to all 49 fiction-domain schema templates~~ ✓ Complete (2026-04-15). 45 files get `vertical: storyengine`; 4 platform Operations files (Scorecard, Role_Record, Team_Manifest, System_Manifest) get `vertical: platform`.
+21. ~~Write remaining Foreman Tier 1 SKILL.md files~~ ✓ Complete (2026-04-15). `session-init`, `halt-monitor`, `transaction-manager`, `context-index-generator`, `rebuild` — all in `Skills/platform/`. validate-vertical.sh updated to 27-check. skill-registry.json updated with all 7 platform skills.
+
+22. ~~Design `affinity-generator` platform skill~~ ✓ Complete (`Skills/platform/affinity-generator/SKILL.md`, 2026-04-15). Reclassified to **platform Tier 2** (not Tier 1 — first platform Tier 2 instance). Five affinity types with explicit criteria. QUERY/COMPUTE/smart modes. Staleness model. Cross-skill invocation protocol via `platform_dependencies` in contextFingerprint (requires session-init §7 amendment). v2 product-root scope seeds for cross-vertical use.
+
+**Design phase complete.** All foundational specs, roles, skills, and schemas are written. Up next: implement.
 
 ## Session Protocol (Mandatory — Established 2026-04-14)
 
