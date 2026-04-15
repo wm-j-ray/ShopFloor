@@ -192,6 +192,31 @@ Foreman's first Tier 1 skill. 237 lines. Establishes the Tier 1 SKILL.md pattern
 
 ---
 
+## Architectural Amendments (ChatGPT Review Response — same session)
+
+An external review surfaced 4 real architectural gaps. All addressed before moving to VERTICAL.md.
+
+**§19 Source of Truth Hierarchy** (Platform Spec)
+4-level hierarchy: file system → per-file metadata → object model records → derived caches.
+Derived caches (manifest, registries, indexes) are always rebuildable. Object model records and audit log are irreplaceable. Design constraint: if a structure cannot be rebuilt from levels 1–3, it must not be a derived cache.
+
+**§20 Transaction Model** (Platform Spec)
+Pending transaction file written before any multi-step write sequence. Each operation marked completed as it runs. Foreman `transaction-manager` skill recovers incomplete sequences at session init. Idempotency requirements formalized for all 4 write types.
+
+**§21 Rebuild Protocol** (Platform Spec)
+Foreman `rebuild` skill reconstructs all 6 derived structures from ground truth. Runs automatically on missing manifest or on Bill's explicit request. Documents what cannot be rebuilt (audit log, global-registry from scratch, Karen's content, object model records themselves).
+
+**Skill I/O Contract** (Skill Designer Spec §3.2 + all 4 SKILL.md files)
+Added `inputs` and `outputs` structured fields to YAML frontmatter. Machine-readable mirrors of Section 3 (Context Requirements) and Section 7 (Write-Back Contract). Used by transaction-manager to pre-write pending transaction files. All 4 existing SKILL.md files bumped to v1.1.
+
+Foreman ROLE.md updated with `transaction-manager` and `rebuild` skills + 2 new routing triggers.
+
+What the review got wrong (pushed back on): event system (intentionally deferred), prompt surface area (addressed by context fingerprints), Skill Designer constraints (already have full spec).
+
+Commit: `1f4d52a`
+
+---
+
 ## What's Next (from this session)
 
 In order:
@@ -200,10 +225,11 @@ In order:
 2. ~~Write `Roles/foreman/ROLE.md`~~ ✓ Complete (2026-04-14)
 3. ~~Write `Skills/system/vertical-registration/SKILL.md`~~ ✓ Complete (2026-04-14)
 4. ~~Update `Roles/managing-editor/ROLE.md`~~ ✓ Complete (2026-04-14, platform language stripped)
-5. Write `VERTICAL.md` at repo root — StoryEngine's registration declaration (entity type prefixes need deliberate design pass first)
-6. Write StoryEngine Spec — all §18.2 vertical concepts from Platform Spec (fiction domain, five roles, entity types, particle extensions)
-7. Audit remaining 4 ROLE.md files for seam violations
-8. Add `vertical: storyengine` frontmatter to all 49 fiction-domain schema templates
+5. ~~Address architectural gaps from external review~~ ✓ Complete (2026-04-14, §19/§20/§21 + I/O contract)
+6. Write `VERTICAL.md` at repo root — StoryEngine's registration declaration (entity type prefixes need deliberate design pass first)
+7. Write StoryEngine Spec — all §18.2 vertical concepts from Platform Spec (fiction domain, five roles, entity types, particle extensions)
+8. Audit remaining 4 ROLE.md files for seam violations
+9. Add `vertical: storyengine` frontmatter to all 49 fiction-domain schema templates
 
 ---
 
