@@ -416,38 +416,46 @@
     {
       "type": "Role_Record",
       "category": "operations",
+      "platform_entity": true,
+      "note": "Platform entity. Named Role_Record_[role-id].json — does not use sequential entity IDs. Platform owns envelope; active vertical owns activityLog payload. Written by platform scorecard-updater (Tier 1).",
       "template_version": "1.0",
-      "id_format": "ROL-NNN",
+      "id_format": "Role_Record_[role-id]",
       "key_fields": ["roleRecordID", "roleID", "roleName", "activeSkills", "linkedScorecardID"],
       "linked_schemas": ["Scorecard", "Team_Manifest"],
-      "writable_by": ["managing_editor"]
+      "writable_by": ["platform"]
     },
     {
       "type": "Scorecard",
       "category": "operations",
+      "platform_entity": true,
+      "note": "Platform entity. Named Scorecard_[role-id].json — does not use sequential entity IDs. Written by platform scorecard-updater (Tier 1). No vertical reads or writes directly.",
       "template_version": "1.0",
-      "id_format": "SCD-NNN",
+      "id_format": "Scorecard_[role-id]",
       "key_fields": ["scorecardID", "roleID", "projectID", "outcomeHistory", "evaluationMode", "warrantyStatus"],
       "linked_schemas": ["Role_Record", "Team_Manifest"],
-      "writable_by": ["managing_editor"]
+      "writable_by": ["platform"]
     },
     {
       "type": "Team_Manifest",
       "category": "operations",
+      "platform_entity": true,
+      "note": "Platform entity. Singleton per project — .shopfloor/team-manifest.json. Written by the Foreman. Tracks which roles are active for this project (shift roster).",
       "template_version": "2.0",
-      "id_format": "TMF-001",
+      "id_format": "singleton",
       "key_fields": ["manifestID", "version", "roles", "systemSettings", "qualityControl"],
       "linked_schemas": ["Role_Record", "Scorecard"],
-      "writable_by": ["managing_editor"]
+      "writable_by": ["platform"]
     },
     {
       "type": "System_Manifest",
       "category": "operations",
+      "platform_entity": true,
+      "note": "Platform entity. Singleton per installation — .shopfloor/system-manifest.json. Written by the Foreman. Tracks runtime operational state and platform configuration.",
       "template_version": "1.0",
       "id_format": "singleton",
       "key_fields": ["active_project_count", "quality_control"],
       "linked_schemas": ["Team_Manifest", "Project", "Scorecard"],
-      "writable_by": ["managing_editor"]
+      "writable_by": ["platform"]
     }
 
   ]
