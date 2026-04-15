@@ -696,6 +696,28 @@ contextFingerprint:
 
 Session init loads only these. A skill that needs no indexes declares an empty list. A skill that needs only the role index loads only that. No skill loads all indexes by default.
 
+#### `platform_dependencies` — Cross-Skill Invocation
+
+A vertical Tier 3 skill may declare platform skills it needs to invoke mid-session. These are not loaded at startup like indexes; they are loaded during station assembly so the skill can call them inline during a Karen session.
+
+```yaml
+contextFingerprint:
+  indexes:
+    - schema-index
+  platform_dependencies:
+    - skill: affinity-generator
+      modes: [query, compute]
+```
+
+`platform_dependencies` declares one or more platform skills by `skill_id`. The optional `modes` array limits which invocation modes the vertical skill may use (prevents a tight-context mobile session from accidentally triggering a compute-mode AI call). If `modes` is omitted, all modes are permitted.
+
+**Station assembly behavior:** When session-init assembles the active role's station (step 7), it reads `platform_dependencies` from the active skill's contextFingerprint and loads each referenced platform skill's SKILL.md alongside the vertical skill's context. The vertical skill can then invoke the platform skill inline using a structured JSON call block.
+
+**Constraints:**
+- Only Tier 3 vertical skills may declare `platform_dependencies` (platform skills do not depend on each other via this mechanism — Foreman sub-skills are orchestrated by session-init directly)
+- The referenced platform skill must exist in `skill-registry.json`
+- If a declared dependency is missing, session-init logs a Warning and continues — the vertical skill will degrade gracefully if the dependency is absent
+
 ### 8.6 Index File Format
 
 Platform-defined envelope; vertical-defined content structure.
@@ -818,12 +840,14 @@ Three tiers classify every skill on the platform. The tier determines what kind 
 | Tier | Name | Context budget | Owns |
 |------|------|---------------|------|
 | 1 | Floor management | 8K tokens | Foreman |
-| 2 | Quality control | 10K tokens | Platform rules roles (v1.0: TBD) |
+| 2 | Quality control | 10K tokens | Foreman (platform-owned); vertical quality roles (vertical-owned) |
 | 3 | Production | 12K tokens | Vertical production roles |
 
 **Tier 1 — Floor management:** Keeps the platform running. Invisible to Karen. Triggered by system events (session init, file change, skill invocation), not by Karen's conversation. Examples: vertical-registration, orphan-manager, index-builder, scorecard-updater.
 
-**Tier 2 — Quality control:** Evaluation and gate enforcement. Triggered by workflow state transitions. May surface findings to Karen as part of a role's output, but Karen does not invoke them directly. Examples (StoryEngine): character-arc-checker, continuity-checker, conformance-reporter.
+**Tier 2 — Quality control:** Evaluation and gate enforcement. Triggered by workflow state transitions or mid-session invocation by Tier 3 vertical skills. May surface findings to Karen as part of a role's output, but Karen does not invoke them directly. Examples (StoryEngine): character-arc-checker, continuity-checker, conformance-reporter.
+
+**Foreman Tier 2:** The Foreman may own Tier 2 skills where the analysis is domain-agnostic and crosses vertical boundaries. These are platform-owned quality control skills — not fiction logic, not floor management — that require AI and operate on platform-layer entities. `affinity-generator` is the first instance: it computes connections between particles (a platform entity type) using five typed dimensions, invoked mid-session by vertical Tier 3 skills via the `platform_dependencies` protocol. The Foreman does not own Tier 3 skills (those belong to vertical production roles) or any skill that requires StoryEngine domain knowledge.
 
 **Tier 3 — Production:** Direct value delivery. Triggered by Karen's conversation with a role. These are the skills Karen experiences, even if she doesn't know they're running. Examples (StoryEngine): starting-lineup, greenlight-review, character-creation, scene-development.
 

@@ -1,7 +1,7 @@
 ---
 skill_id: session-init
 skill_name: Session Init
-version: "1.0"
+version: "1.1"
 tier: 1
 role: foreman
 deployment_targets:
@@ -38,6 +38,10 @@ outputs:
 <!-- Version history
   1.0 (2026-04-15) — Initial draft. Bill Ray + Claude Sonnet 4.6.
                      Informed by ShopFloor Platform Spec v1.0, §3, §8, §9, §11, §20, §21.
+  1.1 (2026-04-15) — Step 7 expanded to handle platform_dependencies in contextFingerprint.
+                     Loads referenced platform SKILL.md files at station assembly time so
+                     vertical Tier 3 skills can invoke platform skills mid-session.
+                     Corresponds to Platform Spec §8.5 amendment (platform_dependencies protocol).
 -->
 
 ---
@@ -149,7 +153,21 @@ This skill does NOT:
      If session-state.state.active_role is set: use it.
      Else: use the vertical coordinator role (e.g., "managing-editor" for StoryEngine).
    Read the active role's skill's contextFingerprint (from skill-registry).
-   Load each declared index into the session context.
+
+   a. Load indexes:
+      For each entry in contextFingerprint.indexes: load the named index file.
+
+   b. Load platform dependencies (if declared):
+      If contextFingerprint.platform_dependencies is present:
+        For each entry in platform_dependencies:
+          Read the referenced skill's path from skill-registry.
+          If the path does not exist:
+            Log WARNING: "platform_dependency '[skill_id]' declared but SKILL.md not found. Dependency unavailable for this session."
+            Continue (do not block station assembly).
+          Else: load the SKILL.md into the active session context.
+      Platform dependencies are loaded alongside indexes — the vertical skill can invoke
+      the platform skill inline during Karen's session.
+
    The station is now assembled. The active role's skill can execute.
 
 8. LOG AND HAND OFF

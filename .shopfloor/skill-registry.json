@@ -27,13 +27,13 @@
     {
       "skillId": "session-init",
       "skillName": "Session Init",
-      "version": "1.0",
+      "version": "1.1",
       "tier": 1,
       "role": "foreman",
       "deploymentTargets": ["mobile", "desktop"],
       "path": "Skills/platform/session-init/SKILL.md",
       "status": "draft",
-      "purpose": "Ordered startup sequence: halt-monitor → transaction-manager → vertical-registration → context-index-generator → manifest check → session state → role station assembly → hand to vertical coordinator.",
+      "purpose": "Ordered startup sequence: halt-monitor → transaction-manager → vertical-registration → context-index-generator → manifest check → session state → role station assembly (indexes + platform_dependencies) → hand to vertical coordinator.",
       "contextFingerprint": {
         "objectModel": [],
         "system": ["VERTICAL.md", "manifest", "session-state", "global-registry", "transactions-directory"]
