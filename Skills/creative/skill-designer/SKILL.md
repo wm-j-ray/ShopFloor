@@ -1,7 +1,7 @@
 ---
 skill_id: skill-designer
 skill_name: Skill Designer
-version: "1.0"
+version: "1.1"
 tier: 3
 role: managing-editor
 deployment_targets:
@@ -11,6 +11,27 @@ status: draft
 date_created: "2026-04-14"
 date_modified: "2026-04-14"
 authored_by: bill
+inputs:
+  - resource: schema-index
+    scope: system
+    required: true
+  - resource: role-index
+    scope: system
+    required: true
+  - resource: skill-registry
+    scope: system
+    required: true
+  - resource: SKILL.md
+    scope: skill-specific
+    required: false
+  - resource: Scorecard
+    scope: skill-specific
+    required: false
+outputs:
+  - resource: SKILL.md
+    action: create-or-update
+  - resource: skill-registry
+    action: update
 ---
 
 <!-- Version history
@@ -18,6 +39,7 @@ authored_by: bill
                      Based on Skill Designer Spec v1.0 (2026-04-12).
                      All prerequisites in place: schema-index.json, role-index.json,
                      proof-of-concept skill (starting-lineup, 2026-04-14).
+  1.1 (2026-04-14) — Added inputs/outputs frontmatter fields per Skill Designer Spec §3.2 update.
 -->
 
 ---

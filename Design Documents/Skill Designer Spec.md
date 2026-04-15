@@ -78,14 +78,36 @@ role: dev-editor
 deployment_targets:
   - mobile
   - desktop
+requires_ai: true
 status: draft | review | active | deprecated
 date_created: ""
 date_modified: ""
 authored_by: bill | karen | skill-designer
+inputs:
+  - resource: Character_Profile
+    scope: active        # active | linked | system | all | project-root | global | skill-specific
+    required: true
+  - resource: Wound_Profile
+    scope: linked
+    required: false
+outputs:
+  - resource: Character_Profile
+    action: create       # create | update | create-or-update | append
 ---
 ```
 
 All fields are required. `authored_by` records the original creator — used for accountability tracking and review routing.
+
+**`inputs`** — machine-readable summary of the skill's context requirements (mirrors Section 3 of the SKILL.md body). Used by session-init and the transaction-manager to plan writes before execution begins. Each entry:
+- `resource` — the data structure, file, or system resource name (e.g., `Character_Profile`, `manifest`, `VERTICAL.md`, `schema-index`)
+- `scope` — where it lives: `active` (current project's active record), `linked` (referenced by another record), `system` (platform infrastructure), `all` (all records of this type in the project), `project-root` (file at repo root), `global` (cross-project path), `skill-specific` (conditional — only in certain modes)
+- `required` — `true` if the skill cannot run without this resource; `false` if optional
+
+**`outputs`** — machine-readable summary of the skill's write-back contract (mirrors Section 7 of the SKILL.md body). Used by the transaction-manager to pre-write the pending transaction file before any writes begin. Each entry:
+- `resource` — the data structure or file being written
+- `action` — `create` (new record), `update` (modify existing), `create-or-update` (upsert), `append` (add to log or array)
+
+`inputs` and `outputs` must stay in sync with Section 3 (Context Requirements) and Section 7 (Write-Back Contract). If those sections change, update the frontmatter. The Skill Designer validates this consistency as part of its output check.
 
 ### 3.3 Section Specifications
 

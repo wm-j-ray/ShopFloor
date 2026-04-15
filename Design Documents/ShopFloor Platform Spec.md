@@ -1135,6 +1135,9 @@ This section is the authoritative statement of what belongs to ShopFloor and wha
 | Skill warranty system | §15 |
 | Schema versioning and migration sequence | §16 |
 | iCloud sync policy | §17 |
+| Source of truth hierarchy | §19 |
+| Transaction model and commit protocol | §20 |
+| Rebuild protocol and what is rebuildable | §21 |
 
 ### 18.2 The Vertical Owns
 
@@ -1172,7 +1175,133 @@ Nothing crosses the seam without a formal declaration. The Foreman enforces this
 
 ---
 
+## 19. Source of Truth Hierarchy
+
+When the file system, per-file metadata, manifest, or any registry disagree, this hierarchy determines which wins:
+
+| Level | Structure | Status |
+|-------|-----------|--------|
+| 1 | **File system** — files that exist on disk exist; no registry entry can make an absent file real | Ground truth |
+| 2 | **Per-file metadata** (`files/[UUID].json`) — UUID assignment is canonical here | Authoritative index |
+| 3 | **Object model records** (`object-model/[EntityType]_[ID].json`) — authoritative entity state; the manifest's `objectModelRegistry` is a cache of these, not the source | Authoritative state |
+| 4 | **Derived caches** — `manifest.json`, `global-registry.json`, `skill-registry.json`, `team-manifest.json`, all context indexes | Rebuildable |
+
+When a level-4 structure disagrees with its sources (levels 1–3), the source wins and the cache is rebuilt. Level-4 structures are never canonical — they are always derived.
+
+**Design constraint:** if a data structure cannot be rebuilt from levels 1–3, it must not exist as a level-4 cache. Design it as irreplaceable (level 2 or 3) or don't design it.
+
+**What is irreplaceable:** `audit.jsonl` (append-only log, no source), object model records themselves (are level 3 — not rebuildable if deleted, treat as primary data), and Karen's actual files (her content, outside `.shopfloor/`).
+
+---
+
+## 20. Transaction Model
+
+The write-back contract (§3.3) defines a multi-step mutation sequence. A crash or timeout mid-sequence leaves the system inconsistent — entity created, manifest not updated; cross-reference written, audit not appended. This section defines how to prevent and recover from partial writes.
+
+### 20.1 Pending Transaction File
+
+Before beginning any multi-step write sequence, write a pending transaction record:
+
+**Location:** `.shopfloor/transactions/[txn-uuid].json`
+
+```json
+{
+  "txnId": "txn-a3f9c21d",
+  "sessionId": "SES-0042",
+  "skillId": "starting-lineup",
+  "timestamp": "2026-04-14T18:00:00Z",
+  "status": "pending",
+  "operations": [
+    {"step": 1, "type": "write_object",    "path": ".shopfloor/object-model/Starting_Lineup_SLU-00001.json", "status": "pending"},
+    {"step": 2, "type": "update_xref",    "path": ".shopfloor/object-model/Project_PRJ-00001.json",         "status": "pending"},
+    {"step": 3, "type": "update_xref",    "path": ".shopfloor/files/[uuid].json",                           "status": "pending"},
+    {"step": 4, "type": "update_manifest", "path": ".shopfloor/manifest.json",                               "status": "pending"},
+    {"step": 5, "type": "append_audit",   "path": ".shopfloor/audit.jsonl",                                 "status": "pending"}
+  ]
+}
+```
+
+The transaction file itself is written atomically (single-file write) before any other write begins.
+
+### 20.2 Commit Protocol
+
+For each operation in sequence order:
+1. Execute the write
+2. Mark that operation `"status": "completed"` in the transaction file (update in place)
+
+When all operations complete: set `"status": "committed"`. Move to `.shopfloor/transactions/committed/` or delete — either is safe. The `.shopfloor/transactions/` directory contains only in-flight or recovered transactions.
+
+### 20.3 Recovery Protocol
+
+On session init, the Foreman's `transaction-manager` skill runs immediately after vertical registration:
+
+1. Scan `.shopfloor/transactions/` for any file with `"status": "pending"`
+2. For each pending transaction: inspect which operations have `"status": "completed"` vs `"pending"`
+3. For each incomplete operation: re-execute using the source of truth hierarchy (§19) to reconstruct correct state — do not assume the operation failed; check first
+4. Set recovered transaction to `"status": "recovered"`; move to `.shopfloor/transactions/committed/`
+5. Log `TRANSACTION_RECOVERED` to audit trail: `txnId`, `skillId`, `operationsRecovered` (count)
+
+If `.shopfloor/transactions/` does not exist or is empty: no action. Transaction recovery adds zero overhead when the system is clean.
+
+### 20.4 Idempotency Requirement
+
+Every write operation in the write-back sequence must be idempotent — executing it twice produces the same result as once. This makes recovery safe.
+
+| Operation | Idempotent implementation |
+|-----------|--------------------------|
+| Write object record | Overwrite in place — same content, same result |
+| Update cross-reference array | Check for existing entry before adding — no duplicates |
+| Register in manifest | Upsert on entityID — overwrite if present, insert if absent |
+| Append to audit | Match on `timestamp + sessionId + event` before appending — skip if duplicate found |
+
+If an operation cannot be made idempotent, it must not appear in a transaction sequence. Model it as a new operation type with idempotent semantics.
+
+---
+
+## 21. Rebuild Protocol
+
+Any level-4 derived structure (§19) must be rebuildable from ground truth. This is both a design constraint and an operational capability.
+
+### 21.1 What Can Be Rebuilt
+
+| Structure | Rebuilt from | Trigger |
+|-----------|-------------|---------|
+| `manifest.fileRegistry` | File system walk + all `files/[UUID].json` records | Missing or corrupt manifest |
+| `manifest.objectModelRegistry` | Walk `.shopfloor/object-model/` directory, read each record's entityID and entityType | Missing or stale registry |
+| `manifest.orphanRegistry` | Cross-reference fileRegistry against file system presence | Reconciliation run |
+| `team-manifest.json` | `VERTICAL.md` roles list + ROLE.md path existence check | Missing manifest or role change |
+| Context indexes | Source files they index (e.g., `Data Structures/` for schema-index) | Source-based invalidation or missing index |
+| `skill-registry.json` | Walk `Skills/` directory, read each SKILL.md frontmatter | Missing or corrupt registry |
+| `global-registry.json` | Re-run vertical-registration per known project | Missing (manual trigger — see §21.3) |
+
+### 21.2 Rebuild Skill
+
+The Foreman's `rebuild` skill executes a full platform reconstruction from ground truth. It runs automatically when `manifest.json` is missing entirely at session init. Bill may also invoke it explicitly.
+
+Sequence:
+1. Walk file system; rebuild `manifest.fileRegistry` from all `files/[UUID].json` records
+2. Walk `.shopfloor/object-model/`; rebuild `manifest.objectModelRegistry`
+3. Cross-reference both; populate `manifest.orphanRegistry`
+4. Rewrite `team-manifest.json` from `VERTICAL.md` declarations
+5. Regenerate all declared context indexes from source
+6. Rebuild `skill-registry.json` from `Skills/` directory SKILL.md frontmatter
+7. Log `PLATFORM_REBUILT` to audit: counts of files registered, objects registered, orphans found, indexes regenerated, skills registered
+
+Karen is not notified. The operation is silent and takes effect at the next session-init pass.
+
+### 21.3 What Cannot Be Rebuilt
+
+| Structure | Why not | Consequence |
+|-----------|---------|-------------|
+| `audit.jsonl` | Append-only event log — no source to derive from | Treat as irreplaceable. Snapshots are the only backup. Never overwrite. |
+| `global-registry.json` | Requires knowledge of all projects ever registered; no single source | Can be reconstructed manually by re-running `vertical-registration` in each project. Automate this for multi-project installations in a future release. |
+| Karen's file content | Lives in her notebooks, not in `.shopfloor/` | Not the platform's responsibility. iCloud sync is the backup layer. |
+| Object model records themselves | They are level 3 (authoritative state), not level 4 | If an object model record is deleted, its data is gone. Snapshots are the backup. The UUID and entity ID remain tracked as orphaned, but content cannot be reconstructed. |
+
+---
+
 *End of ShopFloor Platform Specification v1.0*
 *Derived from ShopFloor Storage Spec v1.0 via concept-assignment session 2026-04-14*
+*Amended 2026-04-14: §19 Source of Truth Hierarchy, §20 Transaction Model, §21 Rebuild Protocol (ChatGPT review response)*
 *Next: StoryEngine Spec — all vertical concepts listed in §18.2*
 

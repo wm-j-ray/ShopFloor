@@ -1,7 +1,7 @@
 ---
 skill_id: vertical-registration
 skill_name: Vertical Registration
-version: "1.0"
+version: "1.1"
 tier: 1
 role: foreman
 deployment_targets:
@@ -12,12 +12,28 @@ status: draft
 date_created: "2026-04-14"
 date_modified: "2026-04-14"
 authored_by: bill
+inputs:
+  - resource: VERTICAL.md
+    scope: project-root
+    required: true
+  - resource: global-registry
+    scope: global
+    required: true
+  - resource: team-manifest
+    scope: project
+    required: false
+outputs:
+  - resource: global-registry
+    action: update
+  - resource: team-manifest
+    action: create-or-update
 ---
 
 <!-- Version history
   1.0 (2026-04-14) — Initial draft. Bill Ray + Claude Sonnet 4.6.
                      Informed by ShopFloor Platform Spec v1.0, §3–4.
                      Error taxonomy defined in Platform Spec §4 and Roles/foreman/ROLE.md.
+  1.1 (2026-04-14) — Added inputs/outputs frontmatter fields per Skill Designer Spec §3.2 update.
 -->
 
 ---

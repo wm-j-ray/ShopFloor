@@ -1,7 +1,7 @@
 ---
 skill_id: starting-lineup
 skill_name: Starting Line-Up
-version: "1.0"
+version: "1.1"
 tier: 3
 role: acquisitions-editor
 deployment_targets:
@@ -12,12 +12,30 @@ status: draft
 date_created: "2026-04-14"
 date_modified: "2026-04-14"
 authored_by: bill
+inputs:
+  - resource: Particle
+    scope: linked
+    required: true
+  - resource: Project
+    scope: active
+    required: true
+  - resource: Starting_Lineup
+    scope: linked
+    required: false
+outputs:
+  - resource: Starting_Lineup
+    action: create
+  - resource: Project
+    action: update
+  - resource: Particle
+    action: update
 ---
 
 <!-- Version history
   1.0 (2026-04-14) — Initial draft. Bill Ray + Claude Sonnet 4.6.
                      Informed by live AE intake exercise (26 Words particle, April 14 session).
                      Design validated in office-hours session: wmjray-main-design-20260414-140434.md
+  1.1 (2026-04-14) — Added inputs/outputs frontmatter fields per Skill Designer Spec §3.2 update.
 -->
 
 ---

@@ -1,7 +1,7 @@
 ---
 skill_id: greenlight-review
 skill_name: Greenlight Review
-version: "1.0"
+version: "1.1"
 tier: 3
 role: publisher
 deployment_targets:
@@ -12,6 +12,26 @@ status: draft
 date_created: "2026-04-14"
 date_modified: "2026-04-14"
 authored_by: bill
+inputs:
+  - resource: Starting_Lineup
+    scope: linked
+    required: true
+  - resource: Project
+    scope: linked
+    required: true
+  - resource: Project
+    scope: all
+    required: true
+  - resource: system-manifest
+    scope: system
+    required: true
+outputs:
+  - resource: Starting_Lineup
+    action: update
+  - resource: Project
+    action: update
+  - resource: system-manifest
+    action: update
 ---
 
 <!-- Version history
@@ -19,6 +39,7 @@ authored_by: bill
                      Publisher judgment model designed in session: wmjray-main-design-20260414.
                      Four evaluation criteria: structural completeness, abandonment pattern,
                      investment signal, portfolio capacity.
+  1.1 (2026-04-14) — Added inputs/outputs frontmatter fields per Skill Designer Spec §3.2 update.
 -->
 
 ---

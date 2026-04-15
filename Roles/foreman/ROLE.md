@@ -30,6 +30,8 @@ The Foreman is a ShopFloor platform role. It knows nothing about fiction, charac
 - `session-init` — run platform startup: halt check, global registry update, team manifest write, context index freshness check
 - `context-index-generator` — generate or refresh indexes declared in `VERTICAL.md`; use source-based invalidation (skip generation if source files unchanged)
 - `halt-monitor` — detect `platform.halt` at the product root; enforce tier-0 overrides for the session; surface status to Bill
+- `transaction-manager` — scan `.shopfloor/transactions/` for incomplete writes at session init; re-execute incomplete operations using the source of truth hierarchy; log `TRANSACTION_RECOVERED` events
+- `rebuild` — full platform reconstruction from ground truth: rebuilds manifest registries, team manifest, context indexes, and skill registry from the file system and object model records; runs automatically when manifest is missing; invocable by Bill explicitly
 
 ---
 
@@ -38,8 +40,11 @@ The Foreman is a ShopFloor platform role. It knows nothing about fiction, charac
 The Foreman is never triggered by Karen's requests. It runs automatically:
 
 - At every session start (session-init, vertical-registration)
+- Immediately after vertical-registration, before routing: scan for incomplete transactions (transaction-manager)
+- When `manifest.json` is missing at session start: automatic full rebuild (rebuild)
 - When any declared context index is stale due to a source change (context-index-generator)
 - When `platform.halt` is present (halt-monitor)
+- When Bill explicitly requests platform reconstruction (rebuild — manual invocation)
 
 Karen never knows the Foreman exists. Bill encounters it when vertical registration fails or a context index cannot be generated — error messages are factual and fix-oriented.
 
