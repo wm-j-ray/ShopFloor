@@ -65,12 +65,12 @@ struct NotebookBrowserView: View {
                 Label(notebookURL.lastPathComponent, systemImage: "folder")
             }
 
-        case .capture(let fileURL, let isDownloaded):
+        case .capture(let fileURL, let isDownloaded, let contentType):
             if isDownloaded {
                 NavigationLink {
                     CaptureDetailView(url: fileURL)
                 } label: {
-                    Label(displayTitle(for: fileURL), systemImage: "doc.text")
+                    captureLabel(title: displayTitle(for: fileURL), contentType: contentType)
                 }
             } else {
                 Label {
@@ -88,6 +88,35 @@ struct NotebookBrowserView: View {
         }
     }
 
+    @ViewBuilder
+    private func captureLabel(title: String, contentType: String) -> some View {
+        HStack {
+            Label(title, systemImage: "doc.text")
+            Spacer()
+            if let label = contentTypeDisplayLabel(contentType) {
+                Text(label)
+                    .font(.caption2)
+                    .fontWeight(.medium)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(Color.secondary.opacity(0.15), in: Capsule())
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    /// Maps internal contentType strings to user-facing badge labels.
+    /// Returns nil for "other" — no badge shown for unclassified files.
+    private func contentTypeDisplayLabel(_ type: String) -> String? {
+        switch type {
+        case "text":  return "Text"
+        case "image": return "Image"
+        case "pdf":   return "PDF"
+        case "link":  return "Link"
+        default:      return nil
+        }
+    }
+
     // MARK: - Data
 
     private func refresh() async {
@@ -102,23 +131,23 @@ struct NotebookBrowserView: View {
     }
 }
 
-// MARK: - Browser Item
+// MARK: - BrowserItem
 
 enum BrowserItem: Identifiable, Comparable {
     case notebook(URL)
-    case capture(URL, isDownloaded: Bool)
+    case capture(URL, isDownloaded: Bool, contentType: String)
 
     var id: String {
         switch self {
-        case .notebook(let u): return "nb-\(u.path)"
-        case .capture(let u, _): return "cap-\(u.path)"
+        case .notebook(let u):       return "nb-\(u.path)"
+        case .capture(let u, _, _): return "cap-\(u.path)"
         }
     }
 
     var sortKey: String {
         switch self {
-        case .notebook(let u): return "0-\(u.lastPathComponent)"
-        case .capture(let u, _): return "1-\(u.lastPathComponent)"
+        case .notebook(let u):       return "0-\(u.lastPathComponent)"
+        case .capture(let u, _, _): return "1-\(u.lastPathComponent)"
         }
     }
 
@@ -135,7 +164,10 @@ enum BrowserItem: Identifiable, Comparable {
         } else if url.pathExtension == "md" {
             let status = values?.ubiquitousItemDownloadingStatus
             let isDownloaded = (status == .current || status == nil)
-            self = .capture(url, isDownloaded: isDownloaded)
+            // TODO Sprint 3: Read stored contentType from .shopfloor JSON for URL captures
+            // (share-sheet captures have no file extension, so ContentType.from returns "other").
+            let contentType = ContentType.from(filename: url.lastPathComponent)
+            self = .capture(url, isDownloaded: isDownloaded, contentType: contentType)
         } else {
             return nil
         }

@@ -3,6 +3,7 @@ import SwiftUI
 struct ContentView: View {
     @EnvironmentObject var store: CaptureStore
     @State private var isResolving = true
+    @State private var showSettings = false
 
     var body: some View {
         Group {
@@ -11,6 +12,21 @@ struct ContentView: View {
             } else if let root = store.rootURL {
                 NavigationStack {
                     NotebookBrowserView(url: root, title: "Capture")
+                        .toolbar {
+                            ToolbarItem(placement: .navigationBarLeading) {
+                                Button {
+                                    showSettings = true
+                                } label: {
+                                    Image(systemName: "gear")
+                                }
+                                .accessibilityLabel("Settings")
+                            }
+                        }
+                }
+                .sheet(isPresented: $showSettings) {
+                    NavigationStack {
+                        SettingsView()
+                    }
                 }
             } else {
                 iCloudUnavailableView()
@@ -22,6 +38,10 @@ struct ContentView: View {
             // Yield so SwiftUI redraws before we do background file I/O.
             await Task.yield()
             try? await store.ensureInbox()
+            // Warm index and clean orphans. Background so it doesn't delay first render.
+            Task(priority: .utility) {
+                await store.rebuild()
+            }
         }
         .alert("Error", isPresented: Binding(
             get: { store.error != nil },
