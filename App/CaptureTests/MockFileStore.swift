@@ -9,6 +9,10 @@ final class MockFileStore: FileStoring, @unchecked Sendable {
     /// Directories created
     var directories: [String] = []
 
+    /// Stubbed iCloud download statuses, keyed by absolute path.
+    /// Used by tests that simulate iCloud stub files (not-yet-synced placeholders).
+    var stubbedDownloadStatus: [String: URLUbiquitousItemDownloadingStatus] = [:]
+
     /// Controls what url(forUbiquityContainerIdentifier:) returns.
     /// Default: a temp directory so paths resolve without iCloud.
     var containerRoot: URL? = {
@@ -54,5 +58,13 @@ final class MockFileStore: FileStoring, @unchecked Sendable {
     func removeItem(at url: URL) throws {
         files.removeValue(forKey: url.path)
         directories.removeAll { $0 == url.path }
+    }
+
+    func contents(atPath path: String) -> Data? {
+        files[path]
+    }
+
+    func downloadingStatus(for url: URL) -> URLUbiquitousItemDownloadingStatus? {
+        stubbedDownloadStatus[url.path]
     }
 }
