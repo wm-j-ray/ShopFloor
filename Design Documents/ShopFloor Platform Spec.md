@@ -68,6 +68,7 @@ Named by UUID prefix to avoid filename collisions when Karen has identically-nam
   "currentFilename": "Chapter One.md",
   "relativePath": "Chapter One.md",
   "fileType": "page",
+  "contentType": "text",
   "parentUUID": "1A2B3C4D-5E6F-7890-ABCD-EF0123456789",
   "schemaVersion": "1.0",
   "dateCreated": "2026-04-11T14:23:00Z",
@@ -76,9 +77,26 @@ Named by UUID prefix to avoid filename collisions when Karen has identically-nam
 }
 ```
 
+Optional fields — omit the key entirely when nil (do not write `null`):
+```json
+{
+  "captureNote": "Found this while researching chapter 3 — the timing detail is key.",
+  "sourceURL": "https://www.nytimes.com/..."
+}
+```
+
 Field notes:
 - `relativePath`: path relative to the project root. Used by orphan detection to locate files without a full tree search.
 - `fileType`: `page` (document) or `book` (container/folder). Platform-defined enum.
+- `contentType`: what kind of content is inside the file. Required. Platform-defined closed enum — set at file creation from file extension or capture method; never changes. Enables content type badges in the list view without a file read per cell.
+  - `"text"` — `.md`, `.txt` files
+  - `"image"` — `.jpg`, `.jpeg`, `.png`, `.heic`, `.gif`, `.webp`
+  - `"pdf"` — `.pdf`
+  - `"link"` — URL captures (no file on disk); determined by `captureMethod = "share_sheet"` + non-empty `sourceURL`. Must be resolved before file-extension lookup.
+  - `"other"` — any file type not in the list above
+  - Note: `"audio"` and `"video"` are reserved for future use when those capture paths are designed.
+- `captureNote`: optional free-text note Karen adds at capture time or edits afterward. Omit key when nil. Empty string treated as nil at write time — the key is omitted. This is NOT `resonanceNote` (StoryEngine-specific, particle-only, distinct semantics). `captureNote` is universal — every file in every vertical can carry one.
+- `sourceURL`: optional. The URL the file was captured from. Set when `captureMethod = "share_sheet"` and a source URL is available. Omit key when nil. Corroborates `contentType = "link"`. Platform-owned capture provenance — not vertical-specific.
 - `status`: `active` or `orphaned`. Platform-managed.
 
 **Vertical extensions:** Verticals may add fields to this record by declaring them in their `VERTICAL.md` under `per_file_extensions`. The Foreman validates that no two verticals claim the same extension field names. Extension fields are namespaced by vertical ID (e.g., `storyengine_isParticle`). Platform-native fields listed above are reserved and cannot be overridden.
@@ -1327,5 +1345,6 @@ Karen is not notified. The operation is silent and takes effect at the next sess
 *End of ShopFloor Platform Specification v1.0*
 *Derived from ShopFloor Storage Spec v1.0 via concept-assignment session 2026-04-14*
 *Amended 2026-04-14: §19 Source of Truth Hierarchy, §20 Transaction Model, §21 Rebuild Protocol (ChatGPT review response)*
+*Amended 2026-04-16: §1.3 — added `contentType` (required), `captureNote` (optional, omit-when-nil), `sourceURL` (optional, omit-when-nil) to platform base schema. Design doc: wmjray-main-design-20260416-092700.md*
 *Next: StoryEngine Spec — all vertical concepts listed in §18.2*
 
