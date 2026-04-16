@@ -243,7 +243,7 @@ ShopFloor/
         proofreader/
         publisher/
   Notes/                — Session records (written at end of every session)
-  App/                  — future Xcode/Swift project
+  App/                  — iOS/macOS Xcode project (Capture.xcodeproj, active Sprint 2+)
   .shopfloor/           — hidden platform infrastructure (not committed; generated at runtime)
     schema-index.json   role-index.json   skill-registry.json
 ```
