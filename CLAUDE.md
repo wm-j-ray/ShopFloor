@@ -94,27 +94,28 @@ Notebooks App (Alfons Schmidt) is the reference architecture. File I/O always cl
 Karen sees: Notebooks (folders) and documents (files). She can rename, move, sub-notebook — full control.
 The inbox notebook is a first-class concept — where captures land when Karen doesn't want to decide yet.
 
-## Current Status (2026-04-14)
+## Current Status (2026-04-16)
 
-Design phase. No code. Three foundational specs complete. Platform/vertical seam defined. Sessions documented in Notes/.
+**Implementation phase.** Sprint 1 and Sprint 2 shipped. `App/Capture.xcodeproj` is the active Xcode project. Sprint 3 starts next session.
 
-| Document | Path | Status |
-|----------|------|--------|
-| ShopFloor Storage Spec v1.0 | `Design Documents/ShopFloor Storage Spec.md` | Updated 2026-04-14 |
-| ShopFloor Platform Spec v1.0 | `Design Documents/ShopFloor Platform Spec.md` | Complete 2026-04-14 |
-| Skill Designer Spec v1.0 | `Design Documents/Skill Designer Spec.md` | Locked |
-| April 9 Office Hours | `Notes/Session-2026-04-09-Office-Hours.md` | Recovered and saved |
-| April 14 Design Session | `Notes/Session-2026-04-14-Design-Session.md` | Complete |
-| April 14 Roles Design | `Notes/Session-2026-04-14-Roles-Design.md` | Complete |
-| April 14 Skill Designer | `Notes/Session-2026-04-14-Skill-Designer.md` | Complete |
-| April 14 Platform Spec | `Notes/Session-2026-04-14-Platform-Spec.md` | Pending write |
+| Milestone | Status |
+|-----------|--------|
+| Design phase (specs, roles, skills, schemas) | ✓ Complete 2026-04-15 |
+| Sprint 1 — iCloud capture app foundation | ✓ Merged to main |
+| Sprint 2 — captureNote, contentType, deleteCapture, rebuild | ✓ Merged to main 2026-04-16 (PR #1) |
+| Sprint 3 — swipe-to-delete, NSMetadataQuery | Next session |
 
-49 data structure schema templates live in `Data Structures/` (all have `writable_by` and `vertical` in frontmatter as of 2026-04-15).
-6 ROLE.md files: 5 StoryEngine vertical roles in `Roles/verticals/storyengine/` + Foreman platform role in `Roles/platform/foreman/`.
-10 SKILL.md files: `starting-lineup` (AE, Tier 3), `greenlight-review` (Publisher, Tier 3), `character-creation` (Dev Editor, Tier 3) in `Skills/verticals/storyengine/creative/`; 7 platform skills in `Skills/platform/`: `session-init`, `halt-monitor`, `transaction-manager`, `vertical-registration`, `context-index-generator`, `rebuild` (all Foreman Tier 1) + `skill-designer` (Foreman Tier 3).
-3 index files in `.shopfloor/`: `schema-index.json`, `role-index.json`, `skill-registry.json`.
-`VERTICAL.md` written 2026-04-15 at repo root.
-`StoryEngine Spec.md` written 2026-04-15 in `Design Documents/`.
+**App — what's on main as of 2026-04-16:**
+- `CaptureStore` with `ShopfloorFileActor`, `filenameToUUID` index, `deleteCapture`, `rebuild`, `updateNote`, `captureNote(forFilename:)`
+- `CaptureMetadata` with `captureNote`, `contentType`, `sourceURL`; custom encode (nil = omitted)
+- `ContentType.from(filename:)` — text/image/pdf/link/other
+- Views: `NotebookBrowserView` (contentType badge), `CaptureDetailView` (note editor), `CreateCaptureView` (note field), `SettingsView` (Rebuild Library), `ContentView` (gear icon, launch rebuild)
+- 39 XCTest passing
+
+**Sprint 3 starting point** (see `Notes/Session-2026-04-16-Sprint-3-Prep.md`):
+1. Swipe-to-delete in `NotebookBrowserView`
+2. NSMetadataQuery migration (replaces warm-once index)
+3. Share extension + BrowserItem contentType from JSON (unblocks P1 TODOS item)
 
 ## What's Next (in order)
 
