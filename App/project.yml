@@ -23,6 +23,10 @@ targets:
     deploymentTarget: "17.0"
     sources:
       - path: Capture
+    dependencies:
+      - target: CaptureShare
+        embed: true
+        codeSign: true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.shopfloor.capture
@@ -31,6 +35,21 @@ targets:
     scheme:
       testTargets:
         - CaptureTests
+
+  CaptureShare:
+    type: app-extension
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: CaptureShare
+      - path: Capture/Models/CaptureMetadata.swift
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.shopfloor.capture.CaptureShare
+        INFOPLIST_FILE: CaptureShare/Info.plist
+        CODE_SIGN_ENTITLEMENTS: CaptureShare/CaptureShare.entitlements
+        SKIP_INSTALL: YES
+        LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks"
 
   CaptureTests:
     type: bundle.unit-test

@@ -124,12 +124,15 @@ final class CaptureStore: ObservableObject {
     @Published var error: Error?
 
     // MARK: - filename → UUID index
-    // Warm-once per session. createCapture() adds eagerly; deleteCapture() removes;
-    // rebuild() cleans orphans. Never re-scanned on pull-to-refresh.
-    // TODO Sprint 3: Replace warm-once with NSMetadataQuery incremental updates.
+    // Warmed synchronously on first contents(of:) call, then kept live by NSMetadataQuery.
+    // createCapture() adds eagerly; deleteCapture() removes; rebuild() cleans orphans.
     private(set) var filenameToUUID: [String: String] = [:]
     private(set) var indexIsWarmed = false
     private(set) var lastRebuildResult: RebuildResult?
+
+    // MARK: - NSMetadataQuery (live iCloud index updates)
+    private var metadataQuery: NSMetadataQuery?
+    private var queryCancellables = Set<AnyCancellable>()
 
     init(fileStore: any FileStoring = FileManager.default) {
         self.fileStore = fileStore
@@ -198,7 +201,7 @@ final class CaptureStore: ObservableObject {
 
         try fileStore.createDirectory(at: destination, withIntermediateDirectories: true, attributes: nil)
 
-        let filename = makeFilename(from: title)
+        let filename = uniqueFilename(from: title, in: destination)
         let fileURL  = destination.appendingPathComponent(filename)
         let notebookPath = destination.path
 
@@ -272,6 +275,20 @@ final class CaptureStore: ObservableObject {
         lastRebuildResult = RebuildResult(orphansRemoved: orphanedFilenames.count)
     }
 
+    /// Returns the stored contentType for the given filename, or nil if not found.
+    /// Reads from the .shopfloor JSON record — not derived from the filename extension.
+    func contentType(forFilename filename: String) -> String? {
+        guard let base = try? requireRoot() else { return nil }
+        let shopfloorURL = shopfloorFilesURL(relativeTo: base)
+        guard let uuid = filenameToUUID[filename] else { return nil }
+        let path = shopfloorURL.appendingPathComponent("\(uuid).json").path
+        guard let data = fileStore.contents(atPath: path),
+              let meta = try? JSONDecoder().decode(CaptureMetadata.self, from: data) else {
+            return nil
+        }
+        return meta.contentType
+    }
+
     /// Returns the captureNote for the given filename, or nil if not found.
     /// Uses the injected fileStore — testable and DI-consistent.
     func captureNote(forFilename filename: String) -> String? {
@@ -303,6 +320,45 @@ final class CaptureStore: ObservableObject {
         try await shopfloorActor.readModifyWrite(uuid: uuid, shopfloorURL: shopfloorURL) { meta in
             meta.captureNote = finalNote
         }
+    }
+
+    /// Deletes a notebook directory and all its captures, cleaning up .shopfloor metadata.
+    ///
+    /// Delete order: metadata first, directory last.
+    /// FileManager.removeItem on a directory removes all contents recursively.
+    func deleteNotebook(at url: URL) async throws {
+        let base = try requireRoot()
+        let shopfloorURL = shopfloorFilesURL(relativeTo: base)
+
+        // Collect captures before the directory is gone.
+        let mdURLs = collectMdFiles(in: url)
+        for mdURL in mdURLs {
+            let filename = mdURL.lastPathComponent
+            if let uuid = filenameToUUID[filename] {
+                try? await shopfloorActor.deleteMetadata(uuid: uuid, shopfloorURL: shopfloorURL)
+                filenameToUUID.removeValue(forKey: filename)
+            }
+        }
+
+        try await shopfloorActor.deleteFile(at: url)
+    }
+
+    private func collectMdFiles(in directory: URL) -> [URL] {
+        var result: [URL] = []
+        let entries = (try? fileStore.contentsOfDirectory(
+            at: directory,
+            includingPropertiesForKeys: [.isDirectoryKey],
+            options: [.skipsHiddenFiles]
+        )) ?? []
+        for url in entries {
+            let isDir = (try? url.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory ?? false
+            if isDir {
+                result += collectMdFiles(in: url)
+            } else if url.pathExtension == "md" {
+                result.append(url)
+            }
+        }
+        return result
     }
 
     // MARK: - Inbox
@@ -346,13 +402,50 @@ final class CaptureStore: ObservableObject {
         }
     }
 
-    /// Warms the filenameToUUID index from existing .shopfloor/files/*.json records.
-    /// Called once per session from contents(of:). Subsequent calls are no-ops.
-    ///
-    /// Synchronous scan is acceptable for warm-once. NSMetadataQuery (Sprint 3)
-    /// will replace this with incremental real-time updates.
+    /// Sync fallback: warms the index on the first contents(of:) call if NSMetadataQuery
+    /// hasn't fired yet (e.g., app just launched, query still initialising).
     private func warmIndex() {
         guard !indexIsWarmed else { return }
+        rebuildIndex()
+    }
+
+    // MARK: - NSMetadataQuery
+
+    /// Starts live iCloud index tracking. Call once from the app layer after resolveContainer().
+    /// Not called in tests — NSMetadataQuery requires real iCloud and would interfere with mocks.
+    func startMetadataQuery() {
+        guard metadataQuery == nil, rootURL != nil else { return }
+
+        let query = NSMetadataQuery()
+        query.searchScopes = [NSMetadataQueryUbiquitousDocumentsScope]
+        query.predicate = NSPredicate(format: "%K LIKE '*.md'", NSMetadataItemFSNameKey)
+        query.operationQueue = .main
+
+        NotificationCenter.default
+            .publisher(for: .NSMetadataQueryDidFinishGathering, object: query)
+            .sink { [weak self, weak query] _ in
+                query?.disableUpdates()
+                self?.rebuildIndex()
+                query?.enableUpdates()
+            }
+            .store(in: &queryCancellables)
+
+        NotificationCenter.default
+            .publisher(for: .NSMetadataQueryDidUpdate, object: query)
+            .sink { [weak self, weak query] _ in
+                query?.disableUpdates()
+                self?.rebuildIndex()
+                query?.enableUpdates()
+            }
+            .store(in: &queryCancellables)
+
+        query.start()
+        metadataQuery = query
+    }
+
+    /// Full scan of .shopfloor/files/*.json — rebuilds filenameToUUID from disk.
+    /// Called by startMetadataQuery() notifications and by warmIndex() on first contents(of:).
+    private func rebuildIndex() {
         guard let base = try? requireRoot() else { return }
         let shopfloorURL = shopfloorFilesURL(relativeTo: base)
 
@@ -362,15 +455,32 @@ final class CaptureStore: ObservableObject {
             options: []
         )) ?? []
 
+        var newIndex: [String: String] = [:]
         for jsonURL in jsonURLs where jsonURL.pathExtension == "json" {
             guard let data = fileStore.contents(atPath: jsonURL.path),
                   let meta = try? JSONDecoder().decode(CaptureMetadata.self, from: data) else {
                 continue
             }
-            filenameToUUID[meta.filename] = meta.uuid
+            newIndex[meta.filename] = meta.uuid
         }
-
+        filenameToUUID = newIndex
         indexIsWarmed = true
+    }
+
+    private func uniqueFilename(from title: String, in directory: URL) -> String {
+        let base = makeFilename(from: title)
+        guard fileStore.fileExists(atPath: directory.appendingPathComponent(base).path) else {
+            return base
+        }
+        let stem = String(base.dropLast(3)) // strip ".md"
+        var counter = 2
+        while true {
+            let candidate = "\(stem)-\(counter).md"
+            if !fileStore.fileExists(atPath: directory.appendingPathComponent(candidate).path) {
+                return candidate
+            }
+            counter += 1
+        }
     }
 
     private func makeFilename(from title: String) -> String {
@@ -380,8 +490,7 @@ final class CaptureStore: ObservableObject {
             .filter { !$0.isEmpty }
             .joined(separator: "-")
             .filter { $0.isLetter || $0.isNumber || $0 == "-" }
-        let timestamp = Int(Date().timeIntervalSince1970)
-        return "\(slug.isEmpty ? "capture" : slug)-\(timestamp).md"
+        return "\(slug.isEmpty ? "capture" : slug).md"
     }
 }
 
