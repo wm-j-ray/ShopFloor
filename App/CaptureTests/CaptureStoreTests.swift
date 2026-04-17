@@ -458,6 +458,63 @@ final class CaptureStoreTests: XCTestCase {
             "rebuild() with no .shopfloor directory must report 0 orphans removed")
     }
 
+    // MARK: - contentType(forFilename:) (Sprint 3)
+
+    func test_contentType_returnsLinkForShareSheetCapture() throws {
+        try store.createCapture(
+            title: "cool article",
+            body: "",
+            sourceURL: "https://example.com/article",
+            captureMethod: "share_sheet"
+        )
+        let mdPath = try XCTUnwrap(mock.files.keys.first { $0.hasSuffix(".md") })
+        let filename = URL(fileURLWithPath: mdPath).lastPathComponent
+
+        let result = store.contentType(forFilename: filename)
+        XCTAssertEqual(result, "link",
+            "contentType(forFilename:) must return 'link' for share_sheet + sourceURL captures")
+    }
+
+    func test_contentType_returnsNilWhenNotInIndex() {
+        let result = store.contentType(forFilename: "not-in-index.md")
+        XCTAssertNil(result, "contentType must return nil when filename is not in the index")
+    }
+
+    // MARK: - makeFilename collision (Sprint 3)
+
+    func test_createCapture_uniqueFilenameOnSlugCollision() throws {
+        // "My Story!" and "My Story?" produce the same slug; within the same second
+        // they'd produce the same filename — the second must get a counter suffix.
+        try store.createCapture(title: "My Story!", body: "first")
+        try store.createCapture(title: "My Story?", body: "second")
+
+        let mdFiles = mock.files.keys.filter { $0.hasSuffix(".md") }
+        XCTAssertEqual(mdFiles.count, 2, "Both captures must produce distinct .md files")
+
+        let filenames = mdFiles.map { URL(fileURLWithPath: $0).lastPathComponent }
+        let uuids = filenames.compactMap { store.filenameToUUID[$0] }
+        XCTAssertEqual(Set(uuids).count, 2, "Both captures must have distinct UUID index entries")
+    }
+
+    // MARK: - deleteNotebook
+
+    func test_deleteNotebook_removesContentsAndMetadata() async throws {
+        let base = try XCTUnwrap(store.rootURL)
+        let notebookURL = base.appendingPathComponent("Research", isDirectory: true)
+        try store.createCapture(title: "My Note", body: "", notebook: notebookURL)
+
+        let mdPath = try XCTUnwrap(mock.files.keys.first { $0.hasSuffix(".md") })
+        let jsonPath = try XCTUnwrap(mock.files.keys.first { $0.contains(".shopfloor/files") && $0.hasSuffix(".json") })
+        let filename = URL(fileURLWithPath: mdPath).lastPathComponent
+        XCTAssertNotNil(store.filenameToUUID[filename], "Index must be populated before delete")
+
+        try await store.deleteNotebook(at: notebookURL)
+
+        XCTAssertNil(mock.files[mdPath], ".md file must be removed when notebook is deleted")
+        XCTAssertNil(mock.files[jsonPath], ".json record must be removed when notebook is deleted")
+        XCTAssertNil(store.filenameToUUID[filename], "Index entry must be removed when notebook is deleted")
+    }
+
     // MARK: - filenameToUUID index (Sprint 2)
 
     func test_createCapture_updatesFilenameToUUIDIndex() throws {

@@ -2,12 +2,12 @@ import Foundation
 
 /// Converts a capture filename slug back to a human-readable display title.
 ///
-/// Filename format: `[slug]-[unix-timestamp].md`
-/// Example: `this-is-the-title-1776284785.md` → `This Is The Title`
+/// Current format: `[slug].md` — e.g., `this-is-the-title.md` → `This Is The Title`
+/// Legacy format: `[slug]-[unix-timestamp].md` — timestamp stripped for backward compat.
 func displayTitle(for url: URL) -> String {
     var name = url.deletingPathExtension().lastPathComponent
 
-    // Strip trailing -[timestamp] (9–11 digit Unix timestamp).
+    // Strip legacy trailing -[timestamp] (9–11 digit Unix timestamp).
     if let range = name.range(of: #"-\d{9,11}$"#, options: .regularExpression) {
         name = String(name[name.startIndex..<range.lowerBound])
     }

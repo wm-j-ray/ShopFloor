@@ -1,14 +1,10 @@
 import SwiftUI
 
-/// App settings. Currently exposes the Rebuild Library emergency operation.
+/// App settings. Exposes the Rebuild Library recovery operation.
 ///
-/// "Rebuild Library" is an escape hatch — Karen should never need it. The index
-/// warms automatically on launch and rebuild() runs in the background. This button
-/// exists for the case where Karen's library got into an inconsistent state (e.g.,
-/// files deleted externally while the app was closed).
-///
-/// Note: This view will be simplified in Sprint 3 when NSMetadataQuery keeps the
-/// index live — the manual rebuild button can be removed once real-time updates land.
+/// NSMetadataQuery keeps the filenameToUUID index live — Karen should never need
+/// this button. It remains as a recovery escape hatch for orphaned metadata records
+/// (e.g., a crash left a .shopfloor/.json with no matching .md).
 struct SettingsView: View {
     @EnvironmentObject var store: CaptureStore
 

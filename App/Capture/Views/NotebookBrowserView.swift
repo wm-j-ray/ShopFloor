@@ -26,6 +26,25 @@ struct NotebookBrowserView: View {
                 ForEach(items) { item in
                     row(for: item)
                 }
+                .onDelete { indexSet in
+                    let captures = indexSet.compactMap { index -> URL? in
+                        if case .capture(let fileURL, _, _) = items[index] { return fileURL }
+                        return nil
+                    }
+                    let notebooks = indexSet.compactMap { index -> URL? in
+                        if case .notebook(let folderURL) = items[index] { return folderURL }
+                        return nil
+                    }
+                    Task {
+                        for fileURL in captures {
+                            try? await store.deleteCapture(at: fileURL)
+                        }
+                        for folderURL in notebooks {
+                            try? await store.deleteNotebook(at: folderURL)
+                        }
+                        await refresh()
+                    }
+                }
             }
         }
         .navigationTitle(title)
@@ -124,7 +143,10 @@ struct NotebookBrowserView: View {
         defer { isLoading = false }
         do {
             let urls = try store.contents(of: url)
-            items = urls.compactMap { BrowserItem(url: $0) }.sorted()
+            items = urls.compactMap { fileURL -> BrowserItem? in
+                let contentType = store.contentType(forFilename: fileURL.lastPathComponent)
+                return BrowserItem(url: fileURL, contentType: contentType)
+            }.sorted()
         } catch {
             store.error = error
         }
@@ -155,7 +177,7 @@ enum BrowserItem: Identifiable, Comparable {
         lhs.sortKey < rhs.sortKey
     }
 
-    init?(url: URL) {
+    init?(url: URL, contentType: String? = nil) {
         let values = try? url.resourceValues(forKeys: [.isDirectoryKey, .ubiquitousItemDownloadingStatusKey])
         guard let isDir = values?.isDirectory else { return nil }
 
@@ -164,10 +186,10 @@ enum BrowserItem: Identifiable, Comparable {
         } else if url.pathExtension == "md" {
             let status = values?.ubiquitousItemDownloadingStatus
             let isDownloaded = (status == .current || status == nil)
-            // TODO Sprint 3: Read stored contentType from .shopfloor JSON for URL captures
-            // (share-sheet captures have no file extension, so ContentType.from returns "other").
-            let contentType = ContentType.from(filename: url.lastPathComponent)
-            self = .capture(url, isDownloaded: isDownloaded, contentType: contentType)
+            // Use stored contentType from .shopfloor JSON when available; fall back to
+            // filename extension for files captured before this fix.
+            let resolvedType = contentType ?? ContentType.from(filename: url.lastPathComponent)
+            self = .capture(url, isDownloaded: isDownloaded, contentType: resolvedType)
         } else {
             return nil
         }

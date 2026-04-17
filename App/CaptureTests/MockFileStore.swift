@@ -58,6 +58,12 @@ final class MockFileStore: FileStoring, @unchecked Sendable {
     func removeItem(at url: URL) throws {
         files.removeValue(forKey: url.path)
         directories.removeAll { $0 == url.path }
+        // Mirror real FileManager: recursively remove contents when target is a directory.
+        let prefix = url.path + "/"
+        for key in Array(files.keys) where key.hasPrefix(prefix) {
+            files.removeValue(forKey: key)
+        }
+        directories.removeAll { $0.hasPrefix(prefix) }
     }
 
     func contents(atPath path: String) -> Data? {

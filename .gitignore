@@ -21,3 +21,4 @@ App/build/
 App/DerivedData/
 *.xcuserstate
 xcuserdata/
+.gstack/

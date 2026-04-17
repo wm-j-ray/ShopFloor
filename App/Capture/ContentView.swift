@@ -34,11 +34,10 @@ struct ContentView: View {
         }
         .task {
             await store.resolveContainer()
+            // Start live iCloud index tracking. Must be called after rootURL is set.
+            store.startMetadataQuery()
             isResolving = false
-            // Yield so SwiftUI redraws before we do background file I/O.
-            await Task.yield()
-            try? await store.ensureInbox()
-            // Warm index and clean orphans. Background so it doesn't delay first render.
+            // Clean orphaned .shopfloor records. Background so it doesn't delay first render.
             Task(priority: .utility) {
                 await store.rebuild()
             }

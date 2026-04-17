@@ -94,28 +94,35 @@ Notebooks App (Alfons Schmidt) is the reference architecture. File I/O always cl
 Karen sees: Notebooks (folders) and documents (files). She can rename, move, sub-notebook — full control.
 The inbox notebook is a first-class concept — where captures land when Karen doesn't want to decide yet.
 
-## Current Status (2026-04-16)
+## Current Status (2026-04-17)
 
-**Implementation phase.** Sprint 1 and Sprint 2 shipped. `App/Capture.xcodeproj` is the active Xcode project. Sprint 3 starts next session.
+**Implementation phase.** Sprints 1–3 + polish shipped. `App/Capture.xcodeproj` is the active Xcode project. Sprint 4 starts next session.
 
 | Milestone | Status |
 |-----------|--------|
 | Design phase (specs, roles, skills, schemas) | ✓ Complete 2026-04-15 |
 | Sprint 1 — iCloud capture app foundation | ✓ Merged to main |
 | Sprint 2 — captureNote, contentType, deleteCapture, rebuild | ✓ Merged to main 2026-04-16 (PR #1) |
-| Sprint 3 — swipe-to-delete, NSMetadataQuery | Next session |
+| Sprint 3 — swipe-to-delete, NSMetadataQuery, Share extension | ✓ Merged to main 2026-04-17 (PR #2) |
+| Sprint 3 polish — notebook delete, clean filenames, no auto-Inbox | ✓ Merged to main 2026-04-17 (PR #3) |
+| Sprint 4 — capture note from Share sheet UI | Next session |
 
-**App — what's on main as of 2026-04-16:**
-- `CaptureStore` with `ShopfloorFileActor`, `filenameToUUID` index, `deleteCapture`, `rebuild`, `updateNote`, `captureNote(forFilename:)`
+**App — what's on main as of 2026-04-17 (post-polish):**
+- `CaptureStore` with `ShopfloorFileActor`, `filenameToUUID` index, `deleteCapture`, `deleteNotebook`, `rebuild`, `updateNote`, `captureNote(forFilename:)`, `contentType(forFilename:)`
+- `CaptureStore.startMetadataQuery()` — live iCloud index via NSMetadataQuery; called from ContentView on launch
+- `CaptureStore.uniqueFilename(from:in:)` — collision-safe filename generation; filenames are `slug.md` (no timestamp)
 - `CaptureMetadata` with `captureNote`, `contentType`, `sourceURL`; custom encode (nil = omitted)
 - `ContentType.from(filename:)` — text/image/pdf/link/other
-- Views: `NotebookBrowserView` (contentType badge), `CaptureDetailView` (note editor), `CreateCaptureView` (note field), `SettingsView` (Rebuild Library), `ContentView` (gear icon, launch rebuild)
-- 39 XCTest passing
+- Views: `NotebookBrowserView` (contentType badge, swipe-to-delete captures AND notebooks), `CaptureDetailView` (note editor), `CreateCaptureView` (note field), `SettingsView` (Rebuild Library — recovery only), `ContentView` (gear icon)
+- `CaptureShare` extension target — Share extension for URL capture from Safari; writes to same iCloud container; version tied to parent app via `$(MARKETING_VERSION)`
+- Inbox notebook created on-demand (first capture), not auto-created on launch
+- 43 XCTest passing
 
-**Sprint 3 starting point** (see `Notes/Session-2026-04-16-Sprint-3-Prep.md`):
-1. Swipe-to-delete in `NotebookBrowserView`
-2. NSMetadataQuery migration (replaces warm-once index)
-3. Share extension + BrowserItem contentType from JSON (unblocks P1 TODOS item)
+**Sprint 4 starting point:**
+1. Device-test the Share extension (first device run; cannot test in simulator)
+2. Capture note from Share sheet UI (currently dismisses immediately after saving — no user input)
+3. Rename/move support in CaptureDetailView (optional Sprint 4)
+4. Platform Spec design sessions §X/§Y/§Z (design sessions, not blocking app dev)
 
 ## What's Next (in order)
 
