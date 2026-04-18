@@ -16,6 +16,10 @@
     <string>$(EXECUTABLE_NAME)</string>
     <key>CFBundlePackageType</key>
     <string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
+    <!-- Empty UILaunchScreen tells iOS the app supports the native screen size.
+         Without this key, iOS letterboxes the app on modern iPhones. -->
+    <key>UILaunchScreen</key>
+    <dict/>
     <!-- Force full-screen on iPad — prevents split-view letterboxing -->
     <key>UIRequiresFullScreen</key>
     <true/>
