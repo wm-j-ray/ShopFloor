@@ -23,6 +23,7 @@ let kInboxName = "Inbox"
 /// Summary of a rebuild() pass. Published so SettingsView can show feedback.
 struct RebuildResult: Sendable {
     let orphansRemoved: Int
+    let filesImported: Int
 }
 
 // MARK: - ShopfloorFileActor
@@ -122,6 +123,8 @@ final class CaptureStore: ObservableObject {
 
     @Published var rootURL: URL?
     @Published var error: Error?
+    /// Incremented by rebuildIndex() so views can observe and refresh their lists.
+    @Published var lastIndexUpdate: Date = Date()
 
     // MARK: - filename → UUID index
     // Warmed synchronously on first contents(of:) call, then kept live by NSMetadataQuery.
@@ -255,24 +258,52 @@ final class CaptureStore: ObservableObject {
         try await shopfloorActor.deleteFile(at: url)
     }
 
-    /// Scans .shopfloor/files/ for orphaned .json records (no matching .md on disk).
-    /// Removes orphaned records and updates the filenameToUUID index.
-    /// Silent — no throws. Designed to run at app launch (Task priority: utility).
+    /// Full library repair:
+    ///   1. Removes orphaned .shopfloor records (no matching .md on disk).
+    ///   2. Imports external .md files (added via Files.app or another app) by
+    ///      creating .shopfloor sidecar records for any .md without one.
+    /// Silent — no throws. Designed for the Rebuild Library button and app launch.
     func rebuild() async {
         guard let base = try? requireRoot() else { return }
         let shopfloorURL = shopfloorFilesURL(relativeTo: base)
 
+        // Step 1: Remove orphaned .json records
         let orphanedFilenames: [String]
         do {
             orphanedFilenames = try await shopfloorActor.scanForOrphans(in: shopfloorURL)
         } catch {
             return // Best-effort; any I/O error is non-fatal
         }
-
         for filename in orphanedFilenames {
             filenameToUUID.removeValue(forKey: filename)
         }
-        lastRebuildResult = RebuildResult(orphansRemoved: orphanedFilenames.count)
+
+        // Step 2: Import external .md files that have no .shopfloor sidecar
+        let imported = (try? importExternalFiles(from: base)) ?? 0
+
+        lastRebuildResult = RebuildResult(orphansRemoved: orphanedFilenames.count, filesImported: imported)
+    }
+
+    /// Scans the Documents root recursively for .md files not yet in filenameToUUID.
+    /// Creates a .shopfloor sidecar for each, using captureMethod "import".
+    /// Returns the number of files newly imported.
+    @discardableResult
+    private func importExternalFiles(from root: URL) throws -> Int {
+        let mdURLs = collectMdFiles(in: root)
+        var count = 0
+        for mdURL in mdURLs {
+            let filename = mdURL.lastPathComponent
+            guard filenameToUUID[filename] == nil else { continue }
+            let metadata = CaptureMetadata.make(
+                filename: filename,
+                notebookPath: mdURL.deletingLastPathComponent().path,
+                captureMethod: "import"
+            )
+            try writeMetadata(metadata)
+            filenameToUUID[filename] = metadata.uuid
+            count += 1
+        }
+        return count
     }
 
     /// Returns the stored contentType for the given filename, or nil if not found.
@@ -347,12 +378,11 @@ final class CaptureStore: ObservableObject {
         var result: [URL] = []
         let entries = (try? fileStore.contentsOfDirectory(
             at: directory,
-            includingPropertiesForKeys: [.isDirectoryKey],
+            includingPropertiesForKeys: nil,
             options: [.skipsHiddenFiles]
         )) ?? []
         for url in entries {
-            let isDir = (try? url.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory ?? false
-            if isDir {
+            if fileStore.isDirectory(at: url) {
                 result += collectMdFiles(in: url)
             } else if url.pathExtension == "md" {
                 result.append(url)
@@ -465,6 +495,7 @@ final class CaptureStore: ObservableObject {
         }
         filenameToUUID = newIndex
         indexIsWarmed = true
+        lastIndexUpdate = Date()
     }
 
     private func uniqueFilename(from title: String, in directory: URL) -> String {

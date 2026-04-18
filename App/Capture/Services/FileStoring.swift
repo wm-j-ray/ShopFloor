@@ -17,6 +17,9 @@ protocol FileStoring: Sendable {
     /// Returns the iCloud downloading status for a URL, or nil if not an iCloud file.
     /// Used by rebuild() to distinguish absent files from not-yet-synced stubs.
     func downloadingStatus(for url: URL) -> URLUbiquitousItemDownloadingStatus?
+
+    /// Returns true if the URL is a directory. Used by collectMdFiles to recurse.
+    func isDirectory(at url: URL) -> Bool
 }
 
 // MARK: - FileManager conformance
@@ -25,6 +28,11 @@ extension FileManager: FileStoring {
     func downloadingStatus(for url: URL) -> URLUbiquitousItemDownloadingStatus? {
         let values = try? url.resourceValues(forKeys: [.ubiquitousItemDownloadingStatusKey])
         return values?.ubiquitousItemDownloadingStatus
+    }
+
+    func isDirectory(at url: URL) -> Bool {
+        var isDir: ObjCBool = false
+        return fileExists(atPath: url.path, isDirectory: &isDir) && isDir.boolValue
     }
     // FileManager already satisfies contents(atPath:) — it is part of the class API.
 }

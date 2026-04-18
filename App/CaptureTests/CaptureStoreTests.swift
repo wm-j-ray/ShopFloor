@@ -440,6 +440,39 @@ final class CaptureStoreTests: XCTestCase {
             "lastRebuildResult must report both orphans removed")
     }
 
+    func test_rebuild_createsSidecarForExternalFile() async throws {
+        // Simulate Karen dropping a .md into her notebook via Files.app.
+        // The file has no .shopfloor sidecar and is not in the index.
+        let base = try XCTUnwrap(store.rootURL)
+        let inboxURL = base.appendingPathComponent("Inbox", isDirectory: true)
+        mock.directories.append(inboxURL.path) // make Inbox traversable
+        let mdPath = inboxURL.appendingPathComponent("external-note.md").path
+        mock.files[mdPath] = "# External Note".data(using: .utf8)
+
+        XCTAssertNil(store.filenameToUUID["external-note.md"], "External file must not be in index before rebuild")
+
+        await store.rebuild()
+
+        XCTAssertNotNil(store.filenameToUUID["external-note.md"],
+            "rebuild() must add externally-added .md files to the index")
+        let jsonFiles = mock.files.keys.filter { $0.contains(".shopfloor/files") && $0.hasSuffix(".json") }
+        XCTAssertEqual(jsonFiles.count, 1, "rebuild() must create a .shopfloor sidecar for the external file")
+        XCTAssertEqual(store.lastRebuildResult?.filesImported, 1)
+    }
+
+    func test_rebuild_doesNotDuplicateExistingCapture() async throws {
+        // A file already managed by the app must not get a second sidecar on rebuild.
+        let base = try XCTUnwrap(store.rootURL)
+        let inboxURL = base.appendingPathComponent("Inbox", isDirectory: true)
+        try store.createCapture(title: "Managed", body: "", notebook: inboxURL)
+
+        await store.rebuild()
+
+        let jsonFiles = mock.files.keys.filter { $0.contains(".shopfloor/files") && $0.hasSuffix(".json") }
+        XCTAssertEqual(jsonFiles.count, 1, "rebuild() must not create a duplicate sidecar for an already-managed file")
+        XCTAssertEqual(store.lastRebuildResult?.filesImported, 0)
+    }
+
     func test_rebuild_silentlyReturnsWhenNoContainer() async {
         let noContainerStore = CaptureStore(fileStore: MockFileStore())
         // rootURL is nil — resolveContainer never called

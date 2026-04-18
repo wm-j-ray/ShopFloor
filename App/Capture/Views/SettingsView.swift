@@ -48,8 +48,14 @@ struct SettingsView: View {
         Task(priority: .utility) {
             await store.rebuild()
             if let result = store.lastRebuildResult {
-                let noun = result.orphansRemoved == 1 ? "orphan" : "orphans"
-                rebuildSummary = "\(result.orphansRemoved) \(noun) removed"
+                var parts: [String] = []
+                let orphanNoun = result.orphansRemoved == 1 ? "orphan" : "orphans"
+                parts.append("\(result.orphansRemoved) \(orphanNoun) removed")
+                if result.filesImported > 0 {
+                    let fileNoun = result.filesImported == 1 ? "file" : "files"
+                    parts.append("\(result.filesImported) \(fileNoun) imported")
+                }
+                rebuildSummary = parts.joined(separator: " · ")
             }
             isRebuilding = false
         }

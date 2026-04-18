@@ -70,6 +70,7 @@ struct NotebookBrowserView: View {
         }
         .task { await refresh() }
         .refreshable { await refresh() }
+        .onChange(of: store.lastIndexUpdate) { _, _ in Task { await refresh() } }
     }
 
     // MARK: - Row

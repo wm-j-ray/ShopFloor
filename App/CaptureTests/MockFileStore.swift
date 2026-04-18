@@ -37,11 +37,20 @@ final class MockFileStore: FileStoring, @unchecked Sendable {
     }
 
     func contentsOfDirectory(at url: URL, includingPropertiesForKeys keys: [URLResourceKey]?, options: FileManager.DirectoryEnumerationOptions) throws -> [URL] {
-        // Return files whose parent path matches the requested directory.
         let prefix = url.path + "/"
-        return files.keys
-            .filter { $0.hasPrefix(prefix) && !$0.dropFirst(prefix.count).contains("/") }
-            .map { URL(fileURLWithPath: $0) }
+        // Direct-child files
+        var paths = Set(files.keys.filter {
+            $0.hasPrefix(prefix) && !String($0.dropFirst(prefix.count)).contains("/")
+        })
+        // Direct-child directories (so recursive traversal works in tests)
+        for dir in directories where dir.hasPrefix(prefix) && !String(dir.dropFirst(prefix.count)).contains("/") {
+            paths.insert(dir)
+        }
+        return paths.map { URL(fileURLWithPath: $0) }
+    }
+
+    func isDirectory(at url: URL) -> Bool {
+        directories.contains(url.path)
     }
 
     func moveItem(at srcURL: URL, to dstURL: URL) throws {

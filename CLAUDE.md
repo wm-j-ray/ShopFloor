@@ -104,19 +104,22 @@ The inbox notebook is a first-class concept — where captures land when Karen d
 | Sprint 1 — iCloud capture app foundation | ✓ Merged to main |
 | Sprint 2 — captureNote, contentType, deleteCapture, rebuild | ✓ Merged to main 2026-04-16 (PR #1) |
 | Sprint 3 — swipe-to-delete, NSMetadataQuery, Share extension | ✓ Merged to main 2026-04-17 (PR #2) |
-| Sprint 3 polish — notebook delete, clean filenames, no auto-Inbox | ✓ Merged to main 2026-04-17 (PR #3) |
+| Sprint 3 polish — notebook delete, clean filenames, no auto-Inbox | ✓ Merged to main 2026-04-17 (PR #2) |
+| Sprint 3 polish 2 — external file import, NSMetadataQuery refresh | ✓ Merged to main 2026-04-17 (PR #3) |
 | Sprint 4 — capture note from Share sheet UI | Next session |
 
-**App — what's on main as of 2026-04-17 (post-polish):**
+**App — what's on main as of 2026-04-17:**
 - `CaptureStore` with `ShopfloorFileActor`, `filenameToUUID` index, `deleteCapture`, `deleteNotebook`, `rebuild`, `updateNote`, `captureNote(forFilename:)`, `contentType(forFilename:)`
-- `CaptureStore.startMetadataQuery()` — live iCloud index via NSMetadataQuery; called from ContentView on launch
+- `CaptureStore.startMetadataQuery()` — live iCloud index via NSMetadataQuery; called from ContentView on launch; sets `lastIndexUpdate` on each query result so NotebookBrowserView auto-refreshes
+- `CaptureStore.rebuild()` — full repair: removes orphan `.json` records AND imports external `.md` files (creates sidecars for files added via Files.app)
 - `CaptureStore.uniqueFilename(from:in:)` — collision-safe filename generation; filenames are `slug.md` (no timestamp)
 - `CaptureMetadata` with `captureNote`, `contentType`, `sourceURL`; custom encode (nil = omitted)
 - `ContentType.from(filename:)` — text/image/pdf/link/other
-- Views: `NotebookBrowserView` (contentType badge, swipe-to-delete captures AND notebooks), `CaptureDetailView` (note editor), `CreateCaptureView` (note field), `SettingsView` (Rebuild Library — recovery only), `ContentView` (gear icon)
+- `FileStoring.isDirectory(at:)` — added to protocol; MockFileStore checks `directories` array
+- Views: `NotebookBrowserView` (contentType badge, swipe-to-delete captures AND notebooks, auto-refresh on index update), `CaptureDetailView` (note editor), `CreateCaptureView` (note field), `SettingsView` (Rebuild Library shows orphans removed + files imported), `ContentView` (gear icon)
 - `CaptureShare` extension target — Share extension for URL capture from Safari; writes to same iCloud container; version tied to parent app via `$(MARKETING_VERSION)`
 - Inbox notebook created on-demand (first capture), not auto-created on launch
-- 43 XCTest passing
+- 45 XCTest passing
 
 **Sprint 4 starting point:**
 1. Device-test the Share extension (first device run; cannot test in simulator)
