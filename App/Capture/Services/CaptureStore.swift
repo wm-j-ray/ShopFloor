@@ -111,6 +111,11 @@ private actor ShopfloorFileActor {
     func deleteFile(at url: URL) throws {
         try fileStore.removeItem(at: url)
     }
+
+    /// Moves (or renames) a file. Propagates any I/O error to the caller.
+    func moveFile(from src: URL, to dst: URL) throws {
+        try fileStore.moveItem(at: src, to: dst)
+    }
 }
 
 // MARK: - CaptureStore
@@ -130,6 +135,9 @@ final class CaptureStore: ObservableObject {
     // Warmed synchronously on first contents(of:) call, then kept live by NSMetadataQuery.
     // createCapture() adds eagerly; deleteCapture() removes; rebuild() cleans orphans.
     private(set) var filenameToUUID: [String: String] = [:]
+    /// Maps filename → Karen's raw display title (from CaptureMetadata.displayTitle).
+    /// Falls back to deriving from filename when no entry exists.
+    private(set) var titleIndex: [String: String] = [:]
     private(set) var indexIsWarmed = false
     private(set) var lastRebuildResult: RebuildResult?
 
@@ -222,12 +230,14 @@ final class CaptureStore: ObservableObject {
             notebookPath: notebookPath,
             captureMethod: captureMethod,
             sourceURL: sourceURL,
-            captureNote: captureNote
+            captureNote: captureNote,
+            displayTitle: title
         )
         try writeMetadata(metadata)
 
-        // Eagerly update index so updateNote / deleteCapture work immediately.
+        // Eagerly update indexes so title/note/delete work immediately.
         filenameToUUID[filename] = metadata.uuid
+        titleIndex[filename] = title
     }
 
     /// Deletes the capture at the given URL and its .shopfloor metadata record.
@@ -351,6 +361,90 @@ final class CaptureStore: ObservableObject {
         try await shopfloorActor.readModifyWrite(uuid: uuid, shopfloorURL: shopfloorURL) { meta in
             meta.captureNote = finalNote
         }
+    }
+
+    // MARK: - Display title
+
+    /// Returns Karen's display title for a capture. Checks the in-memory title index first;
+    /// falls back to deriving from the filename slug.
+    func displayTitle(for url: URL) -> String {
+        let filename = url.lastPathComponent
+        if let stored = titleIndex[filename], !stored.isEmpty { return stored }
+        return derivedTitle(for: url)
+    }
+
+    // MARK: - Rename
+
+    /// Updates the display title for a capture. The slug filename stays unchanged.
+    func renameCapture(at url: URL, newTitle: String) async throws {
+        let base = try requireRoot()
+        let shopfloorURL = shopfloorFilesURL(relativeTo: base)
+        let filename = url.lastPathComponent
+        guard let uuid = filenameToUUID[filename] else {
+            throw CaptureError.uuidNotFound(filename)
+        }
+        let trimmed = newTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+        try await shopfloorActor.readModifyWrite(uuid: uuid, shopfloorURL: shopfloorURL) { meta in
+            meta.displayTitle = trimmed.isEmpty ? nil : trimmed
+        }
+        if trimmed.isEmpty {
+            titleIndex.removeValue(forKey: filename)
+        } else {
+            titleIndex[filename] = trimmed
+        }
+        lastIndexUpdate = Date()
+    }
+
+    /// Renames a notebook directory on disk.
+    func renameNotebook(at url: URL, newName: String) async throws {
+        let trimmed = newName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        let newURL = url.deletingLastPathComponent().appendingPathComponent(trimmed, isDirectory: true)
+        try await shopfloorActor.moveFile(from: url, to: newURL)
+        lastIndexUpdate = Date()
+    }
+
+    // MARK: - Move
+
+    /// Moves a capture .md file to a different notebook directory.
+    /// Updates the metadata's notebookPath. The slug filename is preserved unless there is a collision.
+    func moveCapture(from url: URL, to targetNotebook: URL) async throws {
+        let base = try requireRoot()
+        let shopfloorURL = shopfloorFilesURL(relativeTo: base)
+        let oldFilename = url.lastPathComponent
+
+        // Resolve destination filename (handle collision)
+        let destFilename: String
+        let destURL: URL
+        let candidate = targetNotebook.appendingPathComponent(oldFilename)
+        if fileStore.fileExists(atPath: candidate.path) {
+            let stem = String(oldFilename.dropLast(3)) // strip ".md"
+            destFilename = uniqueFilename(from: stem, in: targetNotebook)
+            destURL = targetNotebook.appendingPathComponent(destFilename)
+        } else {
+            destFilename = oldFilename
+            destURL = candidate
+        }
+
+        // Move the file first
+        try await shopfloorActor.moveFile(from: url, to: destURL)
+
+        // Update metadata
+        if let uuid = filenameToUUID[oldFilename] {
+            let newPath = targetNotebook.path
+            try await shopfloorActor.readModifyWrite(uuid: uuid, shopfloorURL: shopfloorURL) { meta in
+                meta.notebookPath = newPath
+                meta.filename = destFilename
+            }
+            // Update in-memory indexes
+            filenameToUUID.removeValue(forKey: oldFilename)
+            filenameToUUID[destFilename] = uuid
+            if let title = titleIndex[oldFilename] {
+                titleIndex.removeValue(forKey: oldFilename)
+                titleIndex[destFilename] = title
+            }
+        }
+        lastIndexUpdate = Date()
     }
 
     /// Deletes a notebook directory and all its captures, cleaning up .shopfloor metadata.
@@ -486,14 +580,19 @@ final class CaptureStore: ObservableObject {
         )) ?? []
 
         var newIndex: [String: String] = [:]
+        var newTitleIndex: [String: String] = [:]
         for jsonURL in jsonURLs where jsonURL.pathExtension == "json" {
             guard let data = fileStore.contents(atPath: jsonURL.path),
                   let meta = try? JSONDecoder().decode(CaptureMetadata.self, from: data) else {
                 continue
             }
             newIndex[meta.filename] = meta.uuid
+            if let title = meta.displayTitle {
+                newTitleIndex[meta.filename] = title
+            }
         }
         filenameToUUID = newIndex
+        titleIndex = newTitleIndex
         indexIsWarmed = true
         lastIndexUpdate = Date()
     }

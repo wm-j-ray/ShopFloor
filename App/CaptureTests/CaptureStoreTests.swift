@@ -594,3 +594,110 @@ final class CaptureStoreTests: XCTestCase {
             "ensureInbox must use the injected fileStore, not FileManager.default")
     }
 }
+
+// MARK: - MarkdownFormatter tests
+
+final class MarkdownFormatterTests: XCTestCase {
+
+    // MARK: Heading
+
+    func test_heading_appliesPrefix() {
+        let (result, delta) = MarkdownFormatter.toggleHeading(1, in: "Hello world\n", cursorOffset: 0)
+        XCTAssertEqual(result, "# Hello world\n")
+        XCTAssertEqual(delta, 2)
+    }
+
+    func test_heading_removesPrefix_whenSameLevel() {
+        let (result, delta) = MarkdownFormatter.toggleHeading(1, in: "# Hello world\n", cursorOffset: 0)
+        XCTAssertEqual(result, "Hello world\n")
+        XCTAssertEqual(delta, -2)
+    }
+
+    func test_heading_changesLevel() {
+        let (result, _) = MarkdownFormatter.toggleHeading(2, in: "# Hello world\n", cursorOffset: 0)
+        XCTAssertEqual(result, "## Hello world\n")
+    }
+
+    func test_heading_h3() {
+        let (result, _) = MarkdownFormatter.toggleHeading(3, in: "Plain line\n", cursorOffset: 2)
+        XCTAssertEqual(result, "### Plain line\n")
+    }
+
+    func test_heading_multilineAffectsOnlyCurrentLine() {
+        let text = "First line\nSecond line\nThird line\n"
+        let (result, _) = MarkdownFormatter.toggleHeading(1, in: text, cursorOffset: 11) // cursor on "Second"
+        XCTAssertEqual(result, "First line\n# Second line\nThird line\n")
+    }
+
+    // MARK: Inline — bold
+
+    func test_bold_wrapsSelection() {
+        let (result, range) = MarkdownFormatter.toggleInline(
+            open: "**", close: "**", in: "Hello world", range: NSRange(location: 6, length: 5)
+        )
+        XCTAssertEqual(result, "Hello **world**")
+        XCTAssertEqual(range, NSRange(location: 6, length: 9))
+    }
+
+    func test_bold_unwrapsSelection() {
+        let (result, range) = MarkdownFormatter.toggleInline(
+            open: "**", close: "**", in: "Hello **world**", range: NSRange(location: 6, length: 9)
+        )
+        XCTAssertEqual(result, "Hello world")
+        XCTAssertEqual(range, NSRange(location: 6, length: 5))
+    }
+
+    func test_bold_noopOnEmptySelection() {
+        let text = "Hello world"
+        let (result, range) = MarkdownFormatter.toggleInline(
+            open: "**", close: "**", in: text, range: NSRange(location: 3, length: 0)
+        )
+        XCTAssertEqual(result, text)
+        XCTAssertEqual(range.location, 3)
+    }
+
+    // MARK: Inline — italic
+
+    func test_italic_wrapsSelection() {
+        let (result, _) = MarkdownFormatter.toggleInline(
+            open: "_", close: "_", in: "Hello world", range: NSRange(location: 0, length: 5)
+        )
+        XCTAssertEqual(result, "_Hello_ world")
+    }
+
+    func test_italic_unwrapsSelection() {
+        let (result, _) = MarkdownFormatter.toggleInline(
+            open: "_", close: "_", in: "_Hello_ world", range: NSRange(location: 0, length: 7)
+        )
+        XCTAssertEqual(result, "Hello world")
+    }
+
+    // MARK: Link
+
+    func test_insertLink_replacesSelection() {
+        let result = MarkdownFormatter.insertLink(
+            label: "Click here", url: "https://example.com",
+            in: "Click here to visit", range: NSRange(location: 0, length: 10)
+        )
+        XCTAssertEqual(result, "[Click here](https://example.com) to visit")
+    }
+
+    func test_insertLink_emptyLabel_usesUrl() {
+        // The view layer handles empty label → URL substitution before calling insertLink.
+        // insertLink itself just uses whatever label is passed.
+        let result = MarkdownFormatter.insertLink(
+            label: "https://example.com", url: "https://example.com",
+            in: "", range: NSRange(location: 0, length: 0)
+        )
+        XCTAssertEqual(result, "[https://example.com](https://example.com)")
+    }
+
+    func test_insertLink_safeWithOutOfBoundsRange() {
+        let result = MarkdownFormatter.insertLink(
+            label: "link", url: "https://example.com",
+            in: "Hi", range: NSRange(location: 10, length: 5)
+        )
+        // Should not crash; inserts at safe clamped position
+        XCTAssertTrue(result.contains("[link](https://example.com)"))
+    }
+}

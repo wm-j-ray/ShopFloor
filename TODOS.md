@@ -2,6 +2,56 @@
 
 ---
 
+## MCP Sprint — Post-Ship Items
+
+### Particle fields in CaptureMetadata (gates real routing)
+
+**What:** Add `isParticle: Bool`, `particleStatus: String`, and `linkedStartingLineup: String?` to `CaptureMetadata.swift`. RouterBridge's state-based routing is a stub until these fields exist — it will always return "0 particles."
+
+**Why:** These are the StoryEngine vertical extensions declared in VERTICAL.md but never written into the app schema. Until they land, the MCP server can describe captures but can't route based on pipeline state.
+
+**Pros:** Unlocks real routing. Phase 1 MCP becomes genuinely useful as a dev-loop tool.
+
+**Cons:** Requires a schema migration plan (existing .json files lack these fields — safe to treat absence as `isParticle: false` on decode). Also requires app UI for particle promotion (Karen marks a capture as "this might be something").
+
+**Context:** `App/Capture/Models/CaptureMetadata.swift` — add three fields with defaults. `App/MCPServer/RouterBridge.swift` — routing already written to check these fields; just needs real data. The particle promotion UX is a separate feature but the schema change is small.
+
+**Depends on:** MCP Sprint shipped. Particle promotion UX designed (separate sprint).
+
+---
+
+### MCPServer binary install path for Claude Desktop
+
+**What:** Add an Xcode post-build phase to `Capture.xcodeproj` that copies the MCPServer binary to `~/.shopfloor/bin/mcp-server` after every build. Update README snippet to point to that stable path.
+
+**Why:** Without this, the binary lives in DerivedData at a hash-embedded path that changes per machine and per clean build. Bill has to manually find it after every clean.
+
+**Pros:** One build = binary automatically installed. Claude Desktop config never needs updating.
+
+**Cons:** Writes to `~/.shopfloor/bin/` — requires that directory to exist on first build (create it in the build phase).
+
+**Context:** Xcode post-build phases are shell scripts. `cp "${BUILT_PRODUCTS_DIR}/MCPServer" "${HOME}/.shopfloor/bin/mcp-server"` with a `mkdir -p` guard. See Capture.xcodeproj/project.pbxproj for how other build phases are wired.
+
+**Depends on:** MCPServer target created and building.
+
+---
+
+### RouterBridge response caching
+
+**What:** Cache `.shopfloor/` project state in memory inside RouterBridge. Invalidate when `.shopfloor/` directory modification date changes. Use a `[String: CaptureMetadata]` dictionary with a `lastModified: Date` guard.
+
+**Why:** Currently reads all `.shopfloor/files/*.json` on every `storyengine_route` call. Fine at 50 captures. Noticeable at 500+.
+
+**Pros:** Eliminates redundant disk I/O for repeated queries on unchanged projects.
+
+**Cons:** Adds invalidation logic. Modification date check is a heuristic (doesn't catch atomic file swaps). Good enough for Phase 1 scale.
+
+**Context:** `App/MCPServer/RouterBridge.swift` — the caching layer wraps the `loadProjectState()` method.
+
+**Depends on:** MCPServer shipping; real usage data to confirm this matters.
+
+---
+
 ## App / Sprint 3 Items (deferred from Sprint 2 adversarial review)
 
 ### BrowserItem shows wrong contentType for link captures (P1)

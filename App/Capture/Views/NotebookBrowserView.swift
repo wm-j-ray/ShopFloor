@@ -13,6 +13,17 @@ struct NotebookBrowserView: View {
     @State private var showCreateNotebook = false
     @State private var isLoading = false
 
+    // Rename
+    @State private var renamingItem: BrowserItem? = nil
+    @State private var renameText: String = ""
+
+    // Move
+    @State private var movingCaptureURL: URL? = nil
+
+    private var captureCount: Int {
+        items.filter { if case .capture = $0 { true } else { false } }.count
+    }
+
     var body: some View {
         List {
             if items.isEmpty && !isLoading {
@@ -23,30 +34,41 @@ struct NotebookBrowserView: View {
                 )
                 .listRowSeparator(.hidden)
             } else {
-                ForEach(items) { item in
-                    row(for: item)
-                }
-                .onDelete { indexSet in
-                    let captures = indexSet.compactMap { index -> URL? in
-                        if case .capture(let fileURL, _, _) = items[index] { return fileURL }
-                        return nil
+                Section {
+                    ForEach(items) { item in
+                        row(for: item)
                     }
-                    let notebooks = indexSet.compactMap { index -> URL? in
-                        if case .notebook(let folderURL) = items[index] { return folderURL }
-                        return nil
+                    .onDelete { indexSet in
+                        let captures = indexSet.compactMap { index -> URL? in
+                            if case .capture(let fileURL, _, _) = items[index] { return fileURL }
+                            return nil
+                        }
+                        let notebooks = indexSet.compactMap { index -> URL? in
+                            if case .notebook(let folderURL) = items[index] { return folderURL }
+                            return nil
+                        }
+                        Task {
+                            for fileURL in captures {
+                                try? await store.deleteCapture(at: fileURL)
+                            }
+                            for folderURL in notebooks {
+                                try? await store.deleteNotebook(at: folderURL)
+                            }
+                            await refresh()
+                        }
                     }
-                    Task {
-                        for fileURL in captures {
-                            try? await store.deleteCapture(at: fileURL)
-                        }
-                        for folderURL in notebooks {
-                            try? await store.deleteNotebook(at: folderURL)
-                        }
-                        await refresh()
+                } header: {
+                    if captureCount > 0 {
+                        Text("\(captureCount) \(captureCount == 1 ? "Document" : "Documents")")
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(.secondary)
+                            .textCase(.uppercase)
                     }
                 }
             }
         }
+        .listStyle(.plain)
         .navigationTitle(title)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
@@ -71,6 +93,48 @@ struct NotebookBrowserView: View {
         .task { await refresh() }
         .refreshable { await refresh() }
         .onChange(of: store.lastIndexUpdate) { _, _ in Task { await refresh() } }
+        // Rename alert
+        .alert("Rename", isPresented: Binding(
+            get: { renamingItem != nil },
+            set: { if !$0 { renamingItem = nil } }
+        )) {
+            TextField("Name", text: $renameText)
+                .autocorrectionDisabled()
+            Button("Rename") { commitRename() }
+            Button("Cancel", role: .cancel) { renamingItem = nil }
+        }
+        // Move sheet
+        .sheet(isPresented: Binding(
+            get: { movingCaptureURL != nil },
+            set: { if !$0 { movingCaptureURL = nil } }
+        )) {
+            if let captureURL = movingCaptureURL {
+                NotebookPickerView(captureURL: captureURL) {
+                    Task { await refresh() }
+                }
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+            }
+        }
+    }
+
+    // MARK: - Rename
+
+    private func commitRename() {
+        guard let item = renamingItem else { return }
+        let name = renameText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty else { renamingItem = nil; return }
+
+        Task {
+            switch item {
+            case .notebook(let url):
+                try? await store.renameNotebook(at: url, newName: name)
+            case .capture(let url, _, _):
+                try? await store.renameCapture(at: url, newTitle: name)
+            }
+            renamingItem = nil
+            await refresh()
+        }
     }
 
     // MARK: - Row
@@ -82,7 +146,13 @@ struct NotebookBrowserView: View {
             NavigationLink {
                 NotebookBrowserView(url: notebookURL, title: notebookURL.lastPathComponent)
             } label: {
-                Label(notebookURL.lastPathComponent, systemImage: "folder")
+                BrowserRowLabel(icon: "folder", title: notebookURL.lastPathComponent)
+            }
+            .contextMenu {
+                Button("Rename") {
+                    renameText = notebookURL.lastPathComponent
+                    renamingItem = item
+                }
             }
 
         case .capture(let fileURL, let isDownloaded, let contentType):
@@ -90,46 +160,52 @@ struct NotebookBrowserView: View {
                 NavigationLink {
                     CaptureDetailView(url: fileURL)
                 } label: {
-                    captureLabel(title: displayTitle(for: fileURL), contentType: contentType)
+                    BrowserRowLabel(
+                        icon: contentTypeIcon(contentType),
+                        title: store.displayTitle(for: fileURL),
+                        badge: contentTypeDisplayLabel(contentType)
+                    )
+                }
+                .contextMenu {
+                    Button("Rename") {
+                        renameText = store.displayTitle(for: fileURL)
+                        renamingItem = item
+                    }
+                    Button("Move to...") {
+                        movingCaptureURL = fileURL
+                    }
+                    Divider()
+                    Button("Delete", role: .destructive) {
+                        Task {
+                            try? await store.deleteCapture(at: fileURL)
+                            await refresh()
+                        }
+                    }
                 }
             } else {
-                Label {
-                    VStack(alignment: .leading) {
-                        Text(displayTitle(for: fileURL))
-                        Text("Syncing from iCloud...")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                } icon: {
-                    Image(systemName: "icloud.and.arrow.down")
-                        .foregroundStyle(.secondary)
-                }
+                BrowserRowLabel(
+                    icon: "icloud.and.arrow.down",
+                    title: store.displayTitle(for: fileURL),
+                    subtitle: "Syncing from iCloud..."
+                )
             }
         }
     }
 
-    @ViewBuilder
-    private func captureLabel(title: String, contentType: String) -> some View {
-        HStack {
-            Label(title, systemImage: "doc.text")
-            Spacer()
-            if let label = contentTypeDisplayLabel(contentType) {
-                Text(label)
-                    .font(.caption2)
-                    .fontWeight(.medium)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(Color.secondary.opacity(0.15), in: Capsule())
-                    .foregroundStyle(.secondary)
-            }
+    /// Maps contentType to an SF symbol name.
+    private func contentTypeIcon(_ type: String) -> String {
+        switch type {
+        case "image": return "photo"
+        case "pdf":   return "doc.richtext"
+        case "link":  return "link"
+        default:      return "doc.text"
         }
     }
 
     /// Maps internal contentType strings to user-facing badge labels.
-    /// Returns nil for "other" — no badge shown for unclassified files.
+    /// Returns nil for plain text — no badge needed for the default type.
     private func contentTypeDisplayLabel(_ type: String) -> String? {
         switch type {
-        case "text":  return "Text"
         case "image": return "Image"
         case "pdf":   return "PDF"
         case "link":  return "Link"
@@ -151,6 +227,51 @@ struct NotebookBrowserView: View {
         } catch {
             store.error = error
         }
+    }
+}
+
+// MARK: - BrowserRowLabel
+
+private struct BrowserRowLabel: View {
+    let icon: String
+    let title: String
+    var badge: String? = nil
+    var subtitle: String? = nil
+
+    var body: some View {
+        HStack(spacing: 12) {
+            // Icon card — matches Notebooks App reference
+            Image(systemName: icon)
+                .font(.system(size: 15, weight: .regular))
+                .foregroundStyle(.secondary)
+                .frame(width: 30, height: 30)
+                .background(Color(UIColor.secondarySystemBackground),
+                            in: RoundedRectangle(cornerRadius: 7))
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.body)
+                    .foregroundStyle(.primary)
+                if let sub = subtitle {
+                    Text(sub)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            Spacer()
+
+            if let badge {
+                Text(badge)
+                    .font(.caption2)
+                    .fontWeight(.medium)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(Color.secondary.opacity(0.15), in: Capsule())
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(.vertical, 3)
     }
 }
 
@@ -187,8 +308,6 @@ enum BrowserItem: Identifiable, Comparable {
         } else if url.pathExtension == "md" {
             let status = values?.ubiquitousItemDownloadingStatus
             let isDownloaded = (status == .current || status == nil)
-            // Use stored contentType from .shopfloor JSON when available; fall back to
-            // filename extension for files captured before this fix.
             let resolvedType = contentType ?? ContentType.from(filename: url.lastPathComponent)
             self = .capture(url, isDownloaded: isDownloaded, contentType: resolvedType)
         } else {

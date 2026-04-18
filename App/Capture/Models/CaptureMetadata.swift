@@ -11,11 +11,15 @@ struct CaptureMetadata: Codable, Sendable {
     /// Platform UUID for this file. Stable across renames and moves.
     let uuid: String
 
-    /// Filename at time of capture (e.g., "my-capture.md"). May drift if Karen renames.
-    let filename: String
+    /// Filename on disk (e.g., "my-capture.md"). Mutable — updated when file is moved.
+    var filename: String
 
-    /// Notebook path relative to the iCloud Documents root at time of capture.
-    let notebookPath: String
+    /// Notebook path on disk at last known location. Mutable — updated on move.
+    var notebookPath: String
+
+    /// Karen's chosen display title. When present, shown instead of deriving from filename.
+    /// Allows raw input (spaces, capitals, punctuation) while the filename stays a slug.
+    var displayTitle: String?
 
     /// How this capture entered the system. "direct" = typed/pasted in-app.
     let captureMethod: String
@@ -44,7 +48,8 @@ struct CaptureMetadata: Codable, Sendable {
         captureMethod: String = "direct",
         sourceURL: String? = nil,
         captureNote: String? = nil,
-        contentType: String? = nil
+        contentType: String? = nil,
+        displayTitle: String? = nil
     ) -> CaptureMetadata {
         // Explicit override wins. Then "link" for share_sheet+URL. Then filename extension.
         let resolvedType: String
@@ -57,10 +62,12 @@ struct CaptureMetadata: Codable, Sendable {
         }
         // Treat empty captureNote as nil.
         let note = captureNote.flatMap { $0.isEmpty ? nil : $0 }
+        let storedTitle = displayTitle.flatMap { $0.trimmingCharacters(in: .whitespaces).isEmpty ? nil : $0.trimmingCharacters(in: .whitespaces) }
         return CaptureMetadata(
             uuid: UUID().uuidString,
             filename: filename,
             notebookPath: notebookPath,
+            displayTitle: storedTitle,
             captureMethod: captureMethod,
             createdAt: ISO8601DateFormatter().string(from: Date()),
             captureNote: note,
@@ -73,7 +80,7 @@ struct CaptureMetadata: Codable, Sendable {
 
     enum CodingKeys: String, CodingKey {
         case uuid, filename, notebookPath, captureMethod, createdAt
-        case captureNote, contentType, sourceURL
+        case captureNote, contentType, sourceURL, displayTitle
     }
 
     /// Custom encode: omit captureNote and sourceURL keys entirely when nil.
@@ -88,6 +95,7 @@ struct CaptureMetadata: Codable, Sendable {
         try c.encode(contentType, forKey: .contentType)
         try c.encodeIfPresent(captureNote, forKey: .captureNote)
         try c.encodeIfPresent(sourceURL, forKey: .sourceURL)
+        try c.encodeIfPresent(displayTitle, forKey: .displayTitle)
     }
 }
 
