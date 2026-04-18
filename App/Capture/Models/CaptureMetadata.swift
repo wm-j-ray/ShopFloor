@@ -43,12 +43,18 @@ struct CaptureMetadata: Codable, Sendable {
         notebookPath: String,
         captureMethod: String = "direct",
         sourceURL: String? = nil,
-        captureNote: String? = nil
+        captureNote: String? = nil,
+        contentType: String? = nil
     ) -> CaptureMetadata {
-        // "link" must be resolved BEFORE the filename extension check.
-        let resolvedType = (captureMethod == "share_sheet" && sourceURL?.isEmpty == false)
-            ? "link"
-            : ContentType.from(filename: filename)
+        // Explicit override wins. Then "link" for share_sheet+URL. Then filename extension.
+        let resolvedType: String
+        if let explicit = contentType {
+            resolvedType = explicit
+        } else if captureMethod == "share_sheet" && sourceURL?.isEmpty == false {
+            resolvedType = "link"
+        } else {
+            resolvedType = ContentType.from(filename: filename)
+        }
         // Treat empty captureNote as nil.
         let note = captureNote.flatMap { $0.isEmpty ? nil : $0 }
         return CaptureMetadata(
