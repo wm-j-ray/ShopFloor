@@ -33,48 +33,47 @@ struct NotebookBrowserView: View {
                     description: Text("Tap + to add a capture or notebook.")
                 )
                 .listRowSeparator(.hidden)
+                .listRowInsets(EdgeInsets())
             } else {
-                Section {
-                    ForEach(items) { item in
-                        row(for: item)
-                            .listRowInsets(EdgeInsets(top: 0, leading: 12, bottom: 0, trailing: 12))
+                // Count header as a plain row — no Section wrapper (Section always adds top inset)
+                if captureCount > 0 {
+                    Text("\(captureCount) \(captureCount == 1 ? "Document" : "Documents")")
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.secondary)
+                        .textCase(.uppercase)
+                        .listRowInsets(EdgeInsets(top: 6, leading: 12, bottom: 2, trailing: 12))
+                        .listRowSeparator(.hidden)
+                }
+
+                ForEach(items) { item in
+                    row(for: item)
+                        .listRowInsets(EdgeInsets(top: 0, leading: 12, bottom: 0, trailing: 12))
+                }
+                .onDelete { indexSet in
+                    let captures = indexSet.compactMap { index -> URL? in
+                        if case .capture(let fileURL, _, _) = items[index] { return fileURL }
+                        return nil
                     }
-                    .onDelete { indexSet in
-                        let captures = indexSet.compactMap { index -> URL? in
-                            if case .capture(let fileURL, _, _) = items[index] { return fileURL }
-                            return nil
-                        }
-                        let notebooks = indexSet.compactMap { index -> URL? in
-                            if case .notebook(let folderURL) = items[index] { return folderURL }
-                            return nil
-                        }
-                        Task {
-                            for fileURL in captures {
-                                try? await store.deleteCapture(at: fileURL)
-                            }
-                            for folderURL in notebooks {
-                                try? await store.deleteNotebook(at: folderURL)
-                            }
-                            await refresh()
-                        }
+                    let notebooks = indexSet.compactMap { index -> URL? in
+                        if case .notebook(let folderURL) = items[index] { return folderURL }
+                        return nil
                     }
-                } header: {
-                    // Only render header when there is content — empty header still takes space
-                    if captureCount > 0 {
-                        Text("\(captureCount) \(captureCount == 1 ? "Document" : "Documents")")
-                            .font(.caption)
-                            .fontWeight(.semibold)
-                            .foregroundStyle(.secondary)
-                            .textCase(.uppercase)
-                            .padding(.top, 2)
-                    } else {
-                        EmptyView()
+                    Task {
+                        for fileURL in captures {
+                            try? await store.deleteCapture(at: fileURL)
+                        }
+                        for folderURL in notebooks {
+                            try? await store.deleteNotebook(at: folderURL)
+                        }
+                        await refresh()
                     }
                 }
             }
         }
         .listStyle(.plain)
-        .listSectionSpacing(.compact)
+        // Zero out the List's built-in top scroll inset — this is what caused the gap
+        .contentMargins(.top, 0, for: .scrollContent)
         .navigationTitle(title)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
