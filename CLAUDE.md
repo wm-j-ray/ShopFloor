@@ -110,22 +110,33 @@ The inbox notebook is a first-class concept — where captures land when Karen d
 | Detail view composites — ImageCaptureView, PDFCaptureView, companion file routing | ✓ Merged to main 2026-04-17 (PR #5) |
 | MCP architecture design session | ✓ Complete 2026-04-18 (see Notes/Session-2026-04-18-MCP-Design.md) |
 | Sprint 4 UI — layout fixes, Notebooks App styling, rename, move, full-bleed | ✓ On main 2026-04-18 (see Notes/Session-2026-04-18-Sprint-4-UI.md) |
-| Share sheet note UI — capture note + title from Share extension | Next |
+| Sprint 4 polish — Stash-style card rows, link detail view, affordance language | ✓ On main 2026-04-18 (see Notes/Session-2026-04-18-Sprint4-Polish.md) |
 | Notebook picker tree drill-down | Next |
+| Share sheet note UI — capture note + title from Share extension | Next |
 | MCP Sprint — App/MCPServer/ target (macOS, stdio, storyengine_route tool) | After Task 0 audit |
 
-**App — what's on main as of 2026-04-18 (end of session):**
-- `CaptureStore`: `ShopfloorFileActor`, `filenameToUUID` + `titleIndex` indexes, `displayTitle(for:)`, `renameCapture`, `renameNotebook`, `moveCapture`, `deleteCapture`, `deleteNotebook`, `rebuild`, `updateNote`, `captureNote(forFilename:)`, `contentType(forFilename:)`
-- `CaptureMetadata`: `displayTitle: String?` (Karen's raw title, stored in .shopfloor JSON); `filename`/`notebookPath` now `var` for move support; `createCapture` stores raw title at capture time
+**App — what's on main as of 2026-04-18 (end of sprint 4 polish session):**
+- `CaptureStore`: `ShopfloorFileActor`, `filenameToUUID` + `titleIndex` indexes, `displayTitle(for:)`, `renameCapture`, `renameNotebook`, `moveCapture`, `deleteCapture`, `deleteNotebook`, `rebuild`, `updateNote`, `captureNote(forFilename:)`, `contentType(forFilename:)`, `metadata(forFilename:)` (full metadata in one read)
+- `CaptureMetadata`: `displayTitle`, `captureNote`, `sourceURL`, `createdAt`, `contentType` — all exposed via `metadata(forFilename:)`
 - `CaptureFilename`: `derivedTitle(for:)` is the slug→human fallback; `displayTitle(for:)` shim kept for backward compat
 - `CaptureStore.startMetadataQuery()` — live iCloud index via NSMetadataQuery
 - `CaptureStore.rebuild()` — full repair: removes orphans + imports external `.md` files
-- Views: `NotebookBrowserView` (plain list, compact section spacing, inline title, 12pt row insets, icon-card rows matching Notebooks App reference, context menus with Rename/Move/Delete), `CaptureDetailView` (markdown editor, keyboard-aware scroll, note collapses during editing, inline title, ⋯ toolbar menu with Rename/Move), `MarkdownTextEditor` (formatting toolbar at 36pt, keyboard contentInset adjustment, onEditingChanged), `NotebookPickerView` (flat notebook list — tree drill-down is next), `CreateCaptureView`, `SettingsView`, `ContentView`
-- `Info.plist`: `UILaunchScreen = {}` — declares native-resolution support; without this iOS letterboxes the app on device (root cause of the "25% dead space" bug). `UIRequiresFullScreen = YES` — prevents iPad split-view.
+- Views: `NotebookBrowserView` (Stash-style card rows: 64pt thumbnail, type badge, note preview, domain·date; notebook rows with item+sub-notebook counts; context menus with Rename/Move/Delete), `CaptureDetailView` (link detail: tappable hero, Open pill, title+domain, metadata bar, nav bar pencil→rename; Notes section: square.and.pencil header, tappable ghost text; markdown editor for text), `MarkdownTextEditor` (formatting toolbar at 36pt), `NotebookPickerView` (flat notebook list — tree drill-down is next), `CreateCaptureView`, `SettingsView`, `ContentView`
+- `Info.plist`: `UILaunchScreen = {}` — native-resolution support. `UIRequiresFullScreen = YES` — prevents iPad split-view.
 - `CaptureShare` extension target — all content types; version tied to parent app
 - `ImageCaptureView`, `PDFCaptureView` — companion file display
 - Inbox notebook created on-demand (first capture)
 - 45 XCTest passing
+
+**Affordance design language (established 2026-04-18):**
+- Pencil icon (pencil.circle.fill or square.and.pencil) = this field is editable
+- No icon = read-only information
+- Ghost text "Tap to add a note..." = empty editable field, tap to activate
+- Apply this pattern consistently to all noun detail pages going forward
+
+**Karen's Enhancements notebook (iCloud, discovered 2026-04-18):**
+Karen uses the Capture app itself to file enhancement requests. Check `Enhancements/` notebook in iCloud at session start.
+Current requests: quick-capture title, remember-where-you-were, renaming (long-press), saving-links (OG), setting-target-folder (tree picker in share sheet), sorting.
 
 **Platform constraint — system keyboard:**
 iOS provides no API to resize the system keyboard. Height is set by the OS (~280pt portrait, ~150pt landscape). The `FormattingToolbar` above it is 36pt (reduced from 44pt). Users can activate a floating/resizable keyboard by long-pressing the Globe/Emoji key → "Floating" — we cannot trigger this programmatically.
@@ -138,14 +149,13 @@ iOS provides no API to resize the system keyboard. Height is set by the OS (~280
 - Design doc: `~/.gstack/projects/wm-j-ray-ShopFloor/wmjray-main-design-20260418-084517.md`
 
 **Next session — priority queue:**
-1. **Notebook picker tree drill-down** — `NotebookPickerView` flat list → level-by-level browser with back nav inside sheet; "Move Here" at every level; sticky context header throughout
-2. **Raw title backfill** — on `CaptureDetailView.load()`, if `titleIndex[filename]` is nil, read first `# ` heading from body and write it as `displayTitle` (fixes legacy captures without requiring rename)
-3. **Share sheet note UI** — currently dismisses immediately; needs title + note input before saving
-4. **Remember where you were** — state restoration on relaunch to exact capture + scroll position (critical for writers)
-5. **Share text / title** — auto-pull first line as editable title from share-sheet plainText
-6. **Sorting** — drag handles (primary), alpha + date options, persists per notebook
-7. **OG metadata** — thumbnail + description + domain at link capture time
-8. **Device test share extension** — first real hardware run
+1. **Notebook picker tree drill-down** — `NotebookPickerView` flat list → level-by-level browser with back nav inside sheet; "Move Here" at every level; sticky context header throughout (Karen's "Setting Target Folder" enhancement)
+2. **Share sheet note UI** — currently dismisses immediately; needs title + note input before saving (Karen's "Quick Capture title" enhancement)
+3. **Raw title backfill** — on `CaptureDetailView.load()`, if `titleIndex[filename]` is nil, read first `# ` heading from body and write it as `displayTitle`
+4. **Remember where you were** — state restoration on relaunch to exact capture + scroll position (Karen's enhancement)
+5. **OG metadata** — background-fetch title, image, abstract at link capture time; store in metadata; show in link detail hero (Karen's "Saving Links" enhancement)
+6. **Sorting** — drag handles (primary), alpha + date options, persists per notebook (Karen's enhancement)
+7. **Device test share extension** — first real hardware run
 
 ## What's Next (in order)
 
