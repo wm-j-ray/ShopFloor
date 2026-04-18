@@ -106,6 +106,8 @@ The inbox notebook is a first-class concept — where captures land when Karen d
 | Sprint 3 — swipe-to-delete, NSMetadataQuery, Share extension | ✓ Merged to main 2026-04-17 (PR #2) |
 | Sprint 3 polish — notebook delete, clean filenames, no auto-Inbox | ✓ Merged to main 2026-04-17 (PR #2) |
 | Sprint 3 polish 2 — external file import, NSMetadataQuery refresh | ✓ Merged to main 2026-04-17 (PR #3) |
+| Share extension content types — text, image, PDF, movie, generic file | ✓ Merged to main 2026-04-17 (PR #4) |
+| Detail view composites — ImageCaptureView, PDFCaptureView, companion file routing | ✓ Merged to main 2026-04-17 (PR #5) |
 | Sprint 4 — capture note from Share sheet UI | Next session |
 
 **App — what's on main as of 2026-04-17:**
@@ -117,7 +119,10 @@ The inbox notebook is a first-class concept — where captures land when Karen d
 - `ContentType.from(filename:)` — text/image/pdf/link/other
 - `FileStoring.isDirectory(at:)` — added to protocol; MockFileStore checks `directories` array
 - Views: `NotebookBrowserView` (contentType badge, swipe-to-delete captures AND notebooks, auto-refresh on index update), `CaptureDetailView` (note editor), `CreateCaptureView` (note field), `SettingsView` (Rebuild Library shows orphans removed + files imported), `ContentView` (gear icon)
-- `CaptureShare` extension target — Share extension for URL capture from Safari; writes to same iCloud container; version tied to parent app via `$(MARKETING_VERSION)`
+- `CaptureShare` extension target — handles URL, plainText, image (fileURL + UIImage→Data), PDF, movie (reference note), generic file; activation rule covers all types; version tied to parent app via `$(MARKETING_VERSION)`
+- `CaptureDetailView` — branches by contentType: PDF → VStack + PDFCaptureView (no outer ScrollView); image → ScrollView + ImageCaptureView; default → markdown text. `findCompanion()` locates companion media file by stem match.
+- `ImageCaptureView` — async UIImage load via Task.detached; scaledToFit display
+- `PDFCaptureView` — UIViewRepresentable wrapping PDFKit.PDFView; autoScales, singlePageContinuous
 - Inbox notebook created on-demand (first capture), not auto-created on launch
 - 45 XCTest passing
 
