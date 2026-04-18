@@ -96,7 +96,7 @@ The inbox notebook is a first-class concept — where captures land when Karen d
 
 ## Current Status (2026-04-18)
 
-**Implementation phase.** Sprints 1–3 + polish shipped. MCP architecture designed. Sprint 4 is next. `App/Capture.xcodeproj` is the active Xcode project.
+**Implementation phase.** Sprints 1–3 + polish shipped. Sprint 4 UI in progress. `App/Capture.xcodeproj` is the active Xcode project.
 
 | Milestone | Status |
 |-----------|--------|
@@ -109,38 +109,43 @@ The inbox notebook is a first-class concept — where captures land when Karen d
 | Share extension content types — text, image, PDF, movie, generic file | ✓ Merged to main 2026-04-17 (PR #4) |
 | Detail view composites — ImageCaptureView, PDFCaptureView, companion file routing | ✓ Merged to main 2026-04-17 (PR #5) |
 | MCP architecture design session | ✓ Complete 2026-04-18 (see Notes/Session-2026-04-18-MCP-Design.md) |
-| Sprint 4 — capture note from Share sheet UI | Next |
+| Sprint 4 UI — layout fixes, Notebooks App styling, rename, move | ✓ On main 2026-04-18 (see Notes/Session-2026-04-18-Sprint-4-UI.md) |
+| Share sheet note UI — capture note + title from Share extension | Next |
+| Notebook picker tree drill-down | Next |
 | MCP Sprint — App/MCPServer/ target (macOS, stdio, storyengine_route tool) | After Task 0 audit |
 
-**App — what's on main as of 2026-04-18:**
-- `CaptureStore` with `ShopfloorFileActor`, `filenameToUUID` index, `deleteCapture`, `deleteNotebook`, `rebuild`, `updateNote`, `captureNote(forFilename:)`, `contentType(forFilename:)`
-- `CaptureStore.startMetadataQuery()` — live iCloud index via NSMetadataQuery; called from ContentView on launch; sets `lastIndexUpdate` on each query result so NotebookBrowserView auto-refreshes
-- `CaptureStore.rebuild()` — full repair: removes orphan `.json` records AND imports external `.md` files (creates sidecars for files added via Files.app)
-- `CaptureStore.uniqueFilename(from:in:)` — collision-safe filename generation; filenames are `slug.md` (no timestamp)
-- `CaptureMetadata` with `captureNote`, `contentType`, `sourceURL`; custom encode (nil = omitted)
-- `ContentType.from(filename:)` — text/image/pdf/link/other
-- `FileStoring.isDirectory(at:)` — added to protocol; MockFileStore checks `directories` array
-- Views: `NotebookBrowserView` (contentType badge, swipe-to-delete captures AND notebooks, auto-refresh on index update), `CaptureDetailView` (note editor), `CreateCaptureView` (note field), `SettingsView` (Rebuild Library shows orphans removed + files imported), `ContentView` (gear icon)
-- `CaptureShare` extension target — handles URL, plainText, image (fileURL + UIImage→Data), PDF, movie (reference note), generic file; activation rule covers all types; version tied to parent app via `$(MARKETING_VERSION)`
-- `CaptureDetailView` — branches by contentType: PDF → VStack + PDFCaptureView (no outer ScrollView); image → ScrollView + ImageCaptureView; default → markdown text. `findCompanion()` locates companion media file by stem match.
-- `ImageCaptureView` — async UIImage load via Task.detached; scaledToFit display
-- `PDFCaptureView` — UIViewRepresentable wrapping PDFKit.PDFView; autoScales, singlePageContinuous
-- Inbox notebook created on-demand (first capture), not auto-created on launch
+**App — what's on main as of 2026-04-18 (end of session):**
+- `CaptureStore`: `ShopfloorFileActor`, `filenameToUUID` + `titleIndex` indexes, `displayTitle(for:)`, `renameCapture`, `renameNotebook`, `moveCapture`, `deleteCapture`, `deleteNotebook`, `rebuild`, `updateNote`, `captureNote(forFilename:)`, `contentType(forFilename:)`
+- `CaptureMetadata`: `displayTitle: String?` (Karen's raw title, stored in .shopfloor JSON); `filename`/`notebookPath` now `var` for move support; `createCapture` stores raw title at capture time
+- `CaptureFilename`: `derivedTitle(for:)` is the slug→human fallback; `displayTitle(for:)` shim kept for backward compat
+- `CaptureStore.startMetadataQuery()` — live iCloud index via NSMetadataQuery
+- `CaptureStore.rebuild()` — full repair: removes orphans + imports external `.md` files
+- Views: `NotebookBrowserView` (plain list, compact section spacing, inline title, 12pt row insets, icon-card rows matching Notebooks App reference, context menus with Rename/Move/Delete), `CaptureDetailView` (markdown editor, keyboard-aware scroll, note collapses during editing, inline title, ⋯ toolbar menu with Rename/Move), `MarkdownTextEditor` (formatting toolbar at 36pt, keyboard contentInset adjustment, onEditingChanged), `NotebookPickerView` (flat notebook list — tree drill-down is next), `CreateCaptureView`, `SettingsView`, `ContentView`
+- `Info.plist`: `UIRequiresFullScreen = YES` — forces full-screen on iPad, prevents split-view letterboxing
+- `CaptureShare` extension target — all content types; version tied to parent app
+- `ImageCaptureView`, `PDFCaptureView` — companion file display
+- Inbox notebook created on-demand (first capture)
 - 45 XCTest passing
+
+**Platform constraint — system keyboard:**
+iOS provides no API to resize the system keyboard. Height is set by the OS (~280pt portrait, ~150pt landscape). The `FormattingToolbar` above it is 36pt (reduced from 44pt). Users can activate a floating/resizable keyboard by long-pressing the Globe/Emoji key → "Floating" — we cannot trigger this programmatically.
 
 **MCP architecture (designed 2026-04-18, not yet implemented):**
 - ShopFloor is MCP-shaped: Skills=Tools, Notebooks=Resources, Managing Editor=Router
 - One entry-point tool per vertical: `storyengine_route` params `{project, message}`
 - Phase 1: macOS-only `App/MCPServer/` Swift target, stdio transport, read-only stub router
-- Near-term value: Bill's dev loop (~30s feedback vs. ~5min Xcode rebuild)
-- **Task 0 (gates MCP sprint):** audit `CaptureStore.swift` for iOS-specific imports before starting `App/MCPServer/` target
+- **Task 0 (gates MCP sprint):** audit `CaptureStore.swift` for iOS-specific imports
 - Design doc: `~/.gstack/projects/wm-j-ray-ShopFloor/wmjray-main-design-20260418-084517.md`
 
-**Sprint 4 starting point:**
-1. Device-test the Share extension (first device run; cannot test in simulator)
-2. Capture note from Share sheet UI (currently dismisses immediately after saving — no user input)
-3. Rename/move support in CaptureDetailView (optional Sprint 4)
-4. Task 0: audit `CaptureStore.swift` for iOS coupling (gates MCP sprint)
+**Next session — priority queue:**
+1. **Notebook picker tree drill-down** — `NotebookPickerView` flat list → level-by-level browser with back nav inside sheet; "Move Here" at every level; sticky context header throughout
+2. **Raw title backfill** — on `CaptureDetailView.load()`, if `titleIndex[filename]` is nil, read first `# ` heading from body and write it as `displayTitle` (fixes legacy captures without requiring rename)
+3. **Share sheet note UI** — currently dismisses immediately; needs title + note input before saving
+4. **Remember where you were** — state restoration on relaunch to exact capture + scroll position (critical for writers)
+5. **Share text / title** — auto-pull first line as editable title from share-sheet plainText
+6. **Sorting** — drag handles (primary), alpha + date options, persists per notebook
+7. **OG metadata** — thumbnail + description + domain at link capture time
+8. **Device test share extension** — first real hardware run
 
 ## What's Next (in order)
 

@@ -249,15 +249,15 @@ struct MarkdownTextEditor: UIViewRepresentable {
 
 private final class FormattingToolbar: UIToolbar {
     init(coordinator: MarkdownTextEditor.Coordinator) {
-        super.init(frame: CGRect(x: 0, y: 0, width: 375, height: 44))
-        sizeToFit()
+        // 36pt height — more compact than the 44pt UIToolbar default
+        super.init(frame: CGRect(x: 0, y: 0, width: 375, height: 36))
 
         let h1     = button(title: "H1")         { [weak coordinator] in coordinator?.applyHeading(1) }
         let h2     = button(title: "H2")         { [weak coordinator] in coordinator?.applyHeading(2) }
         let h3     = button(title: "H3")         { [weak coordinator] in coordinator?.applyHeading(3) }
-        let bold   = button(sf: "bold")          { [weak coordinator] in coordinator?.applyBold() }
-        let italic = button(sf: "italic")        { [weak coordinator] in coordinator?.applyItalic() }
-        let link   = button(sf: "link")          { [weak coordinator] in coordinator?.requestLink() }
+        let bold   = button(sf: "bold",   size: 13) { [weak coordinator] in coordinator?.applyBold() }
+        let italic = button(sf: "italic", size: 13) { [weak coordinator] in coordinator?.applyItalic() }
+        let link   = button(sf: "link",   size: 13) { [weak coordinator] in coordinator?.requestLink() }
         let space  = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
         let done   = UIBarButtonItem(
             barButtonSystemItem: .done,
@@ -270,11 +270,18 @@ private final class FormattingToolbar: UIToolbar {
 
     required init?(coder: NSCoder) { fatalError() }
 
+    // Compact text button — caption2 font keeps H1/H2/H3 tight
     private func button(title: String, action: @escaping () -> Void) -> UIBarButtonItem {
-        UIBarButtonItem(title: title, primaryAction: UIAction { _ in action() })
+        let btn = UIButton(type: .system)
+        btn.setTitle(title, for: .normal)
+        btn.titleLabel?.font = UIFont.systemFont(ofSize: 13, weight: .semibold)
+        btn.addAction(UIAction { _ in action() }, for: .touchUpInside)
+        return UIBarButtonItem(customView: btn)
     }
 
-    private func button(sf: String, action: @escaping () -> Void) -> UIBarButtonItem {
-        UIBarButtonItem(image: UIImage(systemName: sf), primaryAction: UIAction { _ in action() })
+    private func button(sf: String, size: CGFloat = 15, action: @escaping () -> Void) -> UIBarButtonItem {
+        let config = UIImage.SymbolConfiguration(pointSize: size, weight: .regular)
+        let img = UIImage(systemName: sf, withConfiguration: config)
+        return UIBarButtonItem(image: img, primaryAction: UIAction { _ in action() })
     }
 }

@@ -16,6 +16,9 @@
     <string>$(EXECUTABLE_NAME)</string>
     <key>CFBundlePackageType</key>
     <string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
+    <!-- Force full-screen on iPad — prevents split-view letterboxing -->
+    <key>UIRequiresFullScreen</key>
+    <true/>
     <key>NSUbiquitousContainers</key>
     <dict>
         <key>iCloud.com.shopfloor.capture</key>

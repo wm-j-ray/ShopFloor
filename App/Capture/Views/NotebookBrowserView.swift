@@ -37,6 +37,7 @@ struct NotebookBrowserView: View {
                 Section {
                     ForEach(items) { item in
                         row(for: item)
+                            .listRowInsets(EdgeInsets(top: 0, leading: 12, bottom: 0, trailing: 12))
                     }
                     .onDelete { indexSet in
                         let captures = indexSet.compactMap { index -> URL? in
@@ -58,18 +59,24 @@ struct NotebookBrowserView: View {
                         }
                     }
                 } header: {
+                    // Only render header when there is content — empty header still takes space
                     if captureCount > 0 {
                         Text("\(captureCount) \(captureCount == 1 ? "Document" : "Documents")")
                             .font(.caption)
                             .fontWeight(.semibold)
                             .foregroundStyle(.secondary)
                             .textCase(.uppercase)
+                            .padding(.top, 2)
+                    } else {
+                        EmptyView()
                     }
                 }
             }
         }
         .listStyle(.plain)
+        .listSectionSpacing(.compact)
         .navigationTitle(title)
+        .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Menu {
