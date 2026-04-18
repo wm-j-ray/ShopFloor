@@ -109,7 +109,7 @@ The inbox notebook is a first-class concept — where captures land when Karen d
 | Share extension content types — text, image, PDF, movie, generic file | ✓ Merged to main 2026-04-17 (PR #4) |
 | Detail view composites — ImageCaptureView, PDFCaptureView, companion file routing | ✓ Merged to main 2026-04-17 (PR #5) |
 | MCP architecture design session | ✓ Complete 2026-04-18 (see Notes/Session-2026-04-18-MCP-Design.md) |
-| Sprint 4 UI — layout fixes, Notebooks App styling, rename, move | ✓ On main 2026-04-18 (see Notes/Session-2026-04-18-Sprint-4-UI.md) |
+| Sprint 4 UI — layout fixes, Notebooks App styling, rename, move, full-bleed | ✓ On main 2026-04-18 (see Notes/Session-2026-04-18-Sprint-4-UI.md) |
 | Share sheet note UI — capture note + title from Share extension | Next |
 | Notebook picker tree drill-down | Next |
 | MCP Sprint — App/MCPServer/ target (macOS, stdio, storyengine_route tool) | After Task 0 audit |
@@ -121,7 +121,7 @@ The inbox notebook is a first-class concept — where captures land when Karen d
 - `CaptureStore.startMetadataQuery()` — live iCloud index via NSMetadataQuery
 - `CaptureStore.rebuild()` — full repair: removes orphans + imports external `.md` files
 - Views: `NotebookBrowserView` (plain list, compact section spacing, inline title, 12pt row insets, icon-card rows matching Notebooks App reference, context menus with Rename/Move/Delete), `CaptureDetailView` (markdown editor, keyboard-aware scroll, note collapses during editing, inline title, ⋯ toolbar menu with Rename/Move), `MarkdownTextEditor` (formatting toolbar at 36pt, keyboard contentInset adjustment, onEditingChanged), `NotebookPickerView` (flat notebook list — tree drill-down is next), `CreateCaptureView`, `SettingsView`, `ContentView`
-- `Info.plist`: `UIRequiresFullScreen = YES` — forces full-screen on iPad, prevents split-view letterboxing
+- `Info.plist`: `UILaunchScreen = {}` — declares native-resolution support; without this iOS letterboxes the app on device (root cause of the "25% dead space" bug). `UIRequiresFullScreen = YES` — prevents iPad split-view.
 - `CaptureShare` extension target — all content types; version tied to parent app
 - `ImageCaptureView`, `PDFCaptureView` — companion file display
 - Inbox notebook created on-demand (first capture)

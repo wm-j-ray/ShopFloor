@@ -143,6 +143,30 @@ Like a mini file-browser column.
 
 ---
 
+---
+
+## Post-Session Bug: Full-Bleed / Bezel-to-Bezel (resolved end of session)
+
+**Symptom:** App not filling the screen on device — approximately 25% dead space,
+visible as letterbox bars or a scaled window. Persisted through multiple layout fixes.
+
+**Root cause:** `UILaunchScreen` key missing from `Info.plist`.
+
+Without `UILaunchScreen` (or `UILaunchStoryboardName`), iOS does not recognise the
+app as supporting the device's native screen dimensions. It runs the app in a
+compatibility container that letterboxes or scales the window — unrelated to anything
+in the SwiftUI layout. All previous layout fixes (section spacing, content margins,
+row insets) were optimising inside a window iOS was refusing to render at full size.
+
+**Fix:** Added `<key>UILaunchScreen</key><dict/>` to `Info.plist`. An empty dict is
+sufficient — it declares native-resolution support without requiring custom launch art.
+
+**Lesson:** Any new Xcode target should have `UILaunchScreen` or a launch storyboard
+set up on day one. Without it the app silently runs in compat mode on device (simulators
+are more forgiving and may not show the problem).
+
+---
+
 ## What's Next (priority order for next session)
 
 1. **Notebook picker tree drill-down** — replace flat list with level-by-level browser
