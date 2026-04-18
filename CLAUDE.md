@@ -94,9 +94,9 @@ Notebooks App (Alfons Schmidt) is the reference architecture. File I/O always cl
 Karen sees: Notebooks (folders) and documents (files). She can rename, move, sub-notebook — full control.
 The inbox notebook is a first-class concept — where captures land when Karen doesn't want to decide yet.
 
-## Current Status (2026-04-17)
+## Current Status (2026-04-18)
 
-**Implementation phase.** Sprints 1–3 + polish shipped. `App/Capture.xcodeproj` is the active Xcode project. Sprint 4 starts next session.
+**Implementation phase.** Sprints 1–3 + polish shipped. MCP architecture designed. Sprint 4 is next. `App/Capture.xcodeproj` is the active Xcode project.
 
 | Milestone | Status |
 |-----------|--------|
@@ -108,9 +108,11 @@ The inbox notebook is a first-class concept — where captures land when Karen d
 | Sprint 3 polish 2 — external file import, NSMetadataQuery refresh | ✓ Merged to main 2026-04-17 (PR #3) |
 | Share extension content types — text, image, PDF, movie, generic file | ✓ Merged to main 2026-04-17 (PR #4) |
 | Detail view composites — ImageCaptureView, PDFCaptureView, companion file routing | ✓ Merged to main 2026-04-17 (PR #5) |
-| Sprint 4 — capture note from Share sheet UI | Next session |
+| MCP architecture design session | ✓ Complete 2026-04-18 (see Notes/Session-2026-04-18-MCP-Design.md) |
+| Sprint 4 — capture note from Share sheet UI | Next |
+| MCP Sprint — App/MCPServer/ target (macOS, stdio, storyengine_route tool) | After Task 0 audit |
 
-**App — what's on main as of 2026-04-17:**
+**App — what's on main as of 2026-04-18:**
 - `CaptureStore` with `ShopfloorFileActor`, `filenameToUUID` index, `deleteCapture`, `deleteNotebook`, `rebuild`, `updateNote`, `captureNote(forFilename:)`, `contentType(forFilename:)`
 - `CaptureStore.startMetadataQuery()` — live iCloud index via NSMetadataQuery; called from ContentView on launch; sets `lastIndexUpdate` on each query result so NotebookBrowserView auto-refreshes
 - `CaptureStore.rebuild()` — full repair: removes orphan `.json` records AND imports external `.md` files (creates sidecars for files added via Files.app)
@@ -126,11 +128,19 @@ The inbox notebook is a first-class concept — where captures land when Karen d
 - Inbox notebook created on-demand (first capture), not auto-created on launch
 - 45 XCTest passing
 
+**MCP architecture (designed 2026-04-18, not yet implemented):**
+- ShopFloor is MCP-shaped: Skills=Tools, Notebooks=Resources, Managing Editor=Router
+- One entry-point tool per vertical: `storyengine_route` params `{project, message}`
+- Phase 1: macOS-only `App/MCPServer/` Swift target, stdio transport, read-only stub router
+- Near-term value: Bill's dev loop (~30s feedback vs. ~5min Xcode rebuild)
+- **Task 0 (gates MCP sprint):** audit `CaptureStore.swift` for iOS-specific imports before starting `App/MCPServer/` target
+- Design doc: `~/.gstack/projects/wm-j-ray-ShopFloor/wmjray-main-design-20260418-084517.md`
+
 **Sprint 4 starting point:**
 1. Device-test the Share extension (first device run; cannot test in simulator)
 2. Capture note from Share sheet UI (currently dismisses immediately after saving — no user input)
 3. Rename/move support in CaptureDetailView (optional Sprint 4)
-4. Platform Spec design sessions §X/§Y/§Z (design sessions, not blocking app dev)
+4. Task 0: audit `CaptureStore.swift` for iOS coupling (gates MCP sprint)
 
 ## What's Next (in order)
 
