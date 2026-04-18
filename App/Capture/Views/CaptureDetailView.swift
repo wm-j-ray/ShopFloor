@@ -2,11 +2,13 @@ import SwiftUI
 
 /// Displays a single capture. Branches by contentType:
 ///   text    → MarkdownTextEditor (always editable; auto-saves on disappear)
+///   link    → hero + title + domain + metadata bar + notes
 ///   image   → ImageCaptureView + note section (in ScrollView)
 ///   pdf     → PDFCaptureView + note section (no ScrollView — PDFView scrolls itself)
 ///   default → plain text + note section
 struct CaptureDetailView: View {
     @EnvironmentObject var store: CaptureStore
+    @Environment(\.openURL) private var openURL
     let url: URL
 
     // Content
@@ -15,6 +17,10 @@ struct CaptureDetailView: View {
     @State private var contentType: String = "text"
     @State private var companionURL: URL?
     @State private var isDownloading = false
+
+    // Link metadata
+    @State private var sourceURL: String? = nil
+    @State private var createdAt: String? = nil
 
     // Note
     @State private var captureNote: String?
@@ -62,6 +68,9 @@ struct CaptureDetailView: View {
             } else if contentType == "text" {
                 textEditorBody
 
+            } else if contentType == "link" {
+                linkBody
+
             } else if content != "" || companionURL != nil {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 16) {
@@ -96,6 +105,24 @@ struct CaptureDetailView: View {
                     }
                 } label: {
                     Image(systemName: "ellipsis.circle")
+                }
+            }
+            if contentType == "link" {
+                ToolbarItem(placement: .principal) {
+                    Button {
+                        renameText = title
+                        showRenameAlert = true
+                    } label: {
+                        HStack(spacing: 5) {
+                            Image(systemName: "pencil.circle.fill")
+                                .foregroundStyle(Color(red: 0.88, green: 0.42, blue: 0.32))
+                                .font(.system(size: 14))
+                            Text(title)
+                                .font(.headline)
+                                .foregroundStyle(.primary)
+                        }
+                    }
+                    .buttonStyle(.plain)
                 }
             }
         }
@@ -183,11 +210,17 @@ struct CaptureDetailView: View {
 
     @ViewBuilder
     private var noteSection: some View {
-        if isEditingNote {
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Note")
-                    .font(.subheadline)
+        VStack(alignment: .leading, spacing: 10) {
+            // Header — pencil icon signals this section is editable
+            HStack(spacing: 6) {
+                Text("Notes")
+                    .font(.headline)
+                Image(systemName: "square.and.pencil")
+                    .font(.subheadline.weight(.medium))
                     .foregroundStyle(.secondary)
+            }
+
+            if isEditingNote {
                 TextEditor(text: $noteEditDraft)
                     .frame(minHeight: 80)
                     .padding(8)
@@ -203,29 +236,23 @@ struct CaptureDetailView: View {
                         .disabled(isSavingNote)
                         .bold()
                 }
-            }
-        } else {
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Note")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                    if let note = captureNote, !note.isEmpty {
-                        Text(note)
-                    } else {
-                        Text("Add a note...")
-                            .foregroundStyle(.tertiary)
-                            .italic()
+            } else if let note = captureNote, !note.isEmpty {
+                Text(note)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        noteEditDraft = note
+                        isEditingNote = true
                     }
-                }
-                Spacer()
-                Button {
-                    noteEditDraft = captureNote ?? ""
-                    isEditingNote = true
-                } label: {
-                    Image(systemName: "pencil")
-                        .foregroundStyle(.secondary)
-                }
+            } else {
+                Text("Tap to add a note...")
+                    .foregroundStyle(.tertiary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        noteEditDraft = ""
+                        isEditingNote = true
+                    }
             }
         }
     }
@@ -254,10 +281,13 @@ struct CaptureDetailView: View {
             self.error = error
         }
 
-        captureNote = store.captureNote(forFilename: url.lastPathComponent)
+        let meta = store.metadata(forFilename: url.lastPathComponent)
+        captureNote = meta?.captureNote
+        sourceURL   = meta?.sourceURL
+        createdAt   = meta?.createdAt
         noteEditDraft = captureNote ?? ""
 
-        contentType = store.contentType(forFilename: url.lastPathComponent)
+        contentType = meta?.contentType
             ?? ContentType.from(filename: url.lastPathComponent)
         companionURL = findCompanion()
     }
@@ -302,6 +332,121 @@ struct CaptureDetailView: View {
             }
             isSavingNote = false
         }
+    }
+
+    // MARK: - Link body
+
+    private var linkBody: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                linkHero
+                    .frame(maxWidth: .infinity)
+
+                // Title — long press to rename
+                Text(title)
+                    .font(.title3.bold())
+                    .padding(.horizontal)
+                    .padding(.top, 16)
+                    .padding(.bottom, 4)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .onLongPressGesture {
+                        renameText = title
+                        showRenameAlert = true
+                    }
+
+                if let domain = extractedDomain {
+                    Label(domain, systemImage: "globe")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal)
+                        .padding(.bottom, 16)
+                }
+
+                Divider().padding(.horizontal)
+
+                linkMetadataBar
+                    .padding()
+
+                Divider().padding(.horizontal)
+
+                noteSection
+                    .padding()
+
+                Spacer(minLength: 32)
+            }
+        }
+    }
+
+    private var linkHero: some View {
+        Button {
+            if let raw = sourceURL, let dest = URL(string: raw) {
+                openURL(dest)
+            }
+        } label: {
+            ZStack(alignment: .bottomTrailing) {
+                LinearGradient(
+                    colors: [Color.blue.opacity(0.18), Color.blue.opacity(0.06)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .frame(height: 220)
+                .overlay {
+                    Image(systemName: "link")
+                        .font(.system(size: 60, weight: .ultraLight))
+                        .foregroundStyle(.blue.opacity(0.20))
+                }
+
+                // Visual affordance only — whole hero is the tap target
+                if sourceURL != nil {
+                    Label("Open", systemImage: "arrow.up.right")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 18)
+                        .padding(.vertical, 10)
+                        .background(Color(red: 0.88, green: 0.42, blue: 0.32), in: Capsule())
+                        .padding(16)
+                }
+            }
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var linkMetadataBar: some View {
+        HStack(spacing: 16) {
+            if let date = formattedDate {
+                Label(date, systemImage: "calendar")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            if let domain = extractedDomain {
+                Label(domain, systemImage: "globe")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+            HStack(spacing: 3) {
+                Image(systemName: "link")
+                    .font(.system(size: 9, weight: .semibold))
+                Text("Link")
+                    .font(.system(size: 10, weight: .semibold))
+            }
+            .foregroundStyle(.white)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(Color.blue, in: Capsule())
+        }
+    }
+
+    private var extractedDomain: String? {
+        guard let raw = sourceURL, let host = URL(string: raw)?.host else { return nil }
+        return host.hasPrefix("www.") ? String(host.dropFirst(4)) : host
+    }
+
+    private var formattedDate: String? {
+        guard let iso = createdAt, let date = ISO8601DateFormatter().date(from: iso) else { return nil }
+        let f = DateFormatter()
+        f.dateFormat = "MMM d"
+        return f.string(from: date)
     }
 
     // MARK: - Companion

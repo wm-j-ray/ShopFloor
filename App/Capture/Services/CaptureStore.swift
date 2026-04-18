@@ -330,6 +330,20 @@ final class CaptureStore: ObservableObject {
         return meta.contentType
     }
 
+    /// Returns the full metadata record for the given filename, or nil if not found.
+    /// Prefer this over contentType/captureNote when multiple fields are needed.
+    func metadata(forFilename filename: String) -> CaptureMetadata? {
+        guard let base = try? requireRoot() else { return nil }
+        let shopfloorURL = shopfloorFilesURL(relativeTo: base)
+        guard let uuid = filenameToUUID[filename] else { return nil }
+        let path = shopfloorURL.appendingPathComponent("\(uuid).json").path
+        guard let data = fileStore.contents(atPath: path),
+              let meta = try? JSONDecoder().decode(CaptureMetadata.self, from: data) else {
+            return nil
+        }
+        return meta
+    }
+
     /// Returns the captureNote for the given filename, or nil if not found.
     /// Uses the injected fileStore — testable and DI-consistent.
     func captureNote(forFilename filename: String) -> String? {

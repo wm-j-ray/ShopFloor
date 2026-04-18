@@ -35,7 +35,6 @@ struct NotebookBrowserView: View {
                 .listRowSeparator(.hidden)
                 .listRowInsets(EdgeInsets())
             } else {
-                // Count header as a plain row — no Section wrapper (Section always adds top inset)
                 if captureCount > 0 {
                     Text("\(captureCount) \(captureCount == 1 ? "Document" : "Documents")")
                         .font(.caption)
@@ -49,14 +48,15 @@ struct NotebookBrowserView: View {
                 ForEach(items) { item in
                     row(for: item)
                         .listRowInsets(EdgeInsets(top: 0, leading: 12, bottom: 0, trailing: 12))
+                        .listRowSeparator(.hidden)
                 }
                 .onDelete { indexSet in
                     let captures = indexSet.compactMap { index -> URL? in
-                        if case .capture(let fileURL, _, _) = items[index] { return fileURL }
+                        if case .capture(let fileURL, _, _, _, _, _, _) = items[index] { return fileURL }
                         return nil
                     }
                     let notebooks = indexSet.compactMap { index -> URL? in
-                        if case .notebook(let folderURL) = items[index] { return folderURL }
+                        if case .notebook(let folderURL, _, _) = items[index] { return folderURL }
                         return nil
                     }
                     Task {
@@ -72,7 +72,6 @@ struct NotebookBrowserView: View {
             }
         }
         .listStyle(.plain)
-        // Zero out the List's built-in top scroll inset — this is what caused the gap
         .contentMargins(.top, 0, for: .scrollContent)
         .navigationTitle(title)
         .navigationBarTitleDisplayMode(.inline)
@@ -99,7 +98,6 @@ struct NotebookBrowserView: View {
         .task { await refresh() }
         .refreshable { await refresh() }
         .onChange(of: store.lastIndexUpdate) { _, _ in Task { await refresh() } }
-        // Rename alert
         .alert("Rename", isPresented: Binding(
             get: { renamingItem != nil },
             set: { if !$0 { renamingItem = nil } }
@@ -109,7 +107,6 @@ struct NotebookBrowserView: View {
             Button("Rename") { commitRename() }
             Button("Cancel", role: .cancel) { renamingItem = nil }
         }
-        // Move sheet
         .sheet(isPresented: Binding(
             get: { movingCaptureURL != nil },
             set: { if !$0 { movingCaptureURL = nil } }
@@ -133,9 +130,9 @@ struct NotebookBrowserView: View {
 
         Task {
             switch item {
-            case .notebook(let url):
+            case .notebook(let url, _, _):
                 try? await store.renameNotebook(at: url, newName: name)
-            case .capture(let url, _, _):
+            case .capture(let url, _, _, _, _, _, _):
                 try? await store.renameCapture(at: url, newTitle: name)
             }
             renamingItem = nil
@@ -148,11 +145,15 @@ struct NotebookBrowserView: View {
     @ViewBuilder
     private func row(for item: BrowserItem) -> some View {
         switch item {
-        case .notebook(let notebookURL):
+        case .notebook(let notebookURL, let captureCount, let subNotebookCount):
             NavigationLink {
                 NotebookBrowserView(url: notebookURL, title: notebookURL.lastPathComponent)
             } label: {
-                BrowserRowLabel(icon: "folder", title: notebookURL.lastPathComponent)
+                NotebookRowLabel(
+                    name: notebookURL.lastPathComponent,
+                    captureCount: captureCount,
+                    subNotebookCount: subNotebookCount
+                )
             }
             .contextMenu {
                 Button("Rename") {
@@ -161,15 +162,18 @@ struct NotebookBrowserView: View {
                 }
             }
 
-        case .capture(let fileURL, let isDownloaded, let contentType):
+        case .capture(let fileURL, let isDownloaded, let contentType, let note, let createdAt, let sourceURL, let companionURL):
             if isDownloaded {
                 NavigationLink {
                     CaptureDetailView(url: fileURL)
                 } label: {
-                    BrowserRowLabel(
-                        icon: contentTypeIcon(contentType),
+                    CaptureCardRow(
                         title: store.displayTitle(for: fileURL),
-                        badge: contentTypeDisplayLabel(contentType)
+                        contentType: contentType,
+                        note: note,
+                        createdAt: createdAt,
+                        sourceURL: sourceURL,
+                        companionURL: companionURL
                     )
                 }
                 .contextMenu {
@@ -189,33 +193,22 @@ struct NotebookBrowserView: View {
                     }
                 }
             } else {
-                BrowserRowLabel(
-                    icon: "icloud.and.arrow.down",
-                    title: store.displayTitle(for: fileURL),
-                    subtitle: "Syncing from iCloud..."
-                )
+                HStack(spacing: 12) {
+                    Image(systemName: "icloud.and.arrow.down")
+                        .font(.system(size: 24, weight: .regular))
+                        .foregroundStyle(.secondary)
+                        .frame(width: 64, height: 64)
+                        .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(store.displayTitle(for: fileURL))
+                            .font(.system(size: 15, weight: .semibold))
+                        Text("Syncing from iCloud...")
+                            .font(.system(size: 13))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .padding(.vertical, 4)
             }
-        }
-    }
-
-    /// Maps contentType to an SF symbol name.
-    private func contentTypeIcon(_ type: String) -> String {
-        switch type {
-        case "image": return "photo"
-        case "pdf":   return "doc.richtext"
-        case "link":  return "link"
-        default:      return "doc.text"
-        }
-    }
-
-    /// Maps internal contentType strings to user-facing badge labels.
-    /// Returns nil for plain text — no badge needed for the default type.
-    private func contentTypeDisplayLabel(_ type: String) -> String? {
-        switch type {
-        case "image": return "Image"
-        case "pdf":   return "PDF"
-        case "link":  return "Link"
-        default:      return nil
         }
     }
 
@@ -226,98 +219,255 @@ struct NotebookBrowserView: View {
         defer { isLoading = false }
         do {
             let urls = try store.contents(of: url)
-            items = urls.compactMap { fileURL -> BrowserItem? in
-                let contentType = store.contentType(forFilename: fileURL.lastPathComponent)
-                return BrowserItem(url: fileURL, contentType: contentType)
-            }.sorted()
+            items = urls.compactMap { buildItem(from: $0) }.sorted()
         } catch {
             store.error = error
         }
     }
+
+    private func buildItem(from fileURL: URL) -> BrowserItem? {
+        let values = try? fileURL.resourceValues(
+            forKeys: [.isDirectoryKey, .ubiquitousItemDownloadingStatusKey]
+        )
+        guard let isDir = values?.isDirectory else { return nil }
+
+        if isDir {
+            let subURLs = (try? store.contents(of: fileURL)) ?? []
+            var captures = 0, notebooks = 0
+            for u in subURLs {
+                let v = try? u.resourceValues(forKeys: [.isDirectoryKey])
+                if v?.isDirectory == true { notebooks += 1 }
+                else if u.pathExtension == "md" { captures += 1 }
+            }
+            return .notebook(fileURL, captureCount: captures, subNotebookCount: notebooks)
+        } else if fileURL.pathExtension == "md" {
+            let status = values?.ubiquitousItemDownloadingStatus
+            let isDownloaded = (status == .current || status == nil)
+            let filename = fileURL.lastPathComponent
+            let meta = store.metadata(forFilename: filename)
+            let contentType = meta?.contentType ?? ContentType.from(filename: filename)
+            let companionURL = isDownloaded ? findCompanion(for: fileURL, contentType: contentType) : nil
+            return .capture(
+                fileURL,
+                isDownloaded: isDownloaded,
+                contentType: contentType,
+                note: meta?.captureNote,
+                createdAt: meta?.createdAt,
+                sourceURL: meta?.sourceURL,
+                companionURL: companionURL
+            )
+        }
+        return nil
+    }
+
+    private func findCompanion(for mdURL: URL, contentType: String) -> URL? {
+        let dir  = mdURL.deletingLastPathComponent()
+        let stem = mdURL.deletingPathExtension().lastPathComponent
+        let exts: [String]
+        switch contentType {
+        case "image": exts = ["jpg", "jpeg", "png", "heic", "gif", "webp"]
+        case "pdf":   exts = ["pdf"]
+        default:      return nil
+        }
+        return exts
+            .map { dir.appendingPathComponent("\(stem).\($0)") }
+            .first { FileManager.default.fileExists(atPath: $0.path) }
+    }
 }
 
-// MARK: - BrowserRowLabel
+// MARK: - CaptureCardRow
 
-private struct BrowserRowLabel: View {
-    let icon: String
+private struct CaptureCardRow: View {
     let title: String
-    var badge: String? = nil
-    var subtitle: String? = nil
+    let contentType: String
+    let note: String?
+    let createdAt: String?
+    let sourceURL: String?
+    let companionURL: URL?
+
+    @State private var thumbnail: UIImage?
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            thumbnailView
+                .frame(width: 64, height: 64)
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+                .overlay(alignment: .bottomLeading) {
+                    typeBadge.padding(4)
+                }
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(.primary)
+                    .lineLimit(2)
+
+                if let note, !note.isEmpty {
+                    Text(note)
+                        .font(.system(size: 13))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                }
+
+                Spacer(minLength: 4)
+
+                if let dateText {
+                    Text(dateText)
+                        .font(.system(size: 12))
+                        .foregroundStyle(.tertiary)
+                }
+            }
+            .padding(.vertical, 2)
+        }
+        .padding(.vertical, 6)
+        .task(id: companionURL) {
+            guard let url = companionURL, contentType == "image" else { return }
+            thumbnail = await Task.detached(priority: .utility) {
+                UIImage(contentsOfFile: url.path)
+            }.value
+        }
+    }
+
+    @ViewBuilder
+    private var thumbnailView: some View {
+        if contentType == "image", let img = thumbnail {
+            Image(uiImage: img)
+                .resizable()
+                .scaledToFill()
+        } else {
+            iconBackground
+        }
+    }
+
+    private var iconBackground: some View {
+        let (symbol, color) = typeAppearance
+        return ZStack {
+            color.opacity(0.12)
+            Image(systemName: symbol)
+                .font(.system(size: 26, weight: .regular))
+                .foregroundStyle(color.opacity(0.9))
+        }
+    }
+
+    private var typeBadge: some View {
+        let (symbol, label, color) = badgeAppearance
+        return HStack(spacing: 3) {
+            Image(systemName: symbol)
+                .font(.system(size: 9, weight: .semibold))
+            Text(label)
+                .font(.system(size: 10, weight: .semibold))
+        }
+        .foregroundStyle(.white)
+        .padding(.horizontal, 5)
+        .padding(.vertical, 2.5)
+        .background(color, in: Capsule())
+    }
+
+    private var typeAppearance: (String, Color) {
+        switch contentType {
+        case "link":  return ("link", .blue)
+        case "pdf":   return ("doc.richtext", .orange)
+        case "image": return ("photo", .teal)
+        default:      return ("doc.text", Color(.systemPurple))
+        }
+    }
+
+    private var badgeAppearance: (String, String, Color) {
+        switch contentType {
+        case "link":  return ("link", "Link", .blue)
+        case "pdf":   return ("doc.richtext", "PDF", .orange)
+        case "image": return ("photo", "Image", .teal)
+        default:      return ("doc.text", "Text", Color(.systemPurple))
+        }
+    }
+
+    private var domain: String? {
+        guard let raw = sourceURL,
+              let host = URL(string: raw)?.host else { return nil }
+        return host.hasPrefix("www.") ? String(host.dropFirst(4)) : host
+    }
+
+    private var dateText: String? {
+        var parts: [String] = []
+        if let d = domain { parts.append(d) }
+        if let iso = createdAt, let date = ISO8601DateFormatter().date(from: iso) {
+            let now = Date()
+            if now.timeIntervalSince(date) < 86400 {
+                let f = RelativeDateTimeFormatter()
+                f.unitsStyle = .abbreviated
+                parts.append(f.localizedString(for: date, relativeTo: now))
+            } else {
+                let f = DateFormatter()
+                f.dateFormat = "MMM d"
+                parts.append(f.string(from: date))
+            }
+        }
+        return parts.isEmpty ? nil : parts.joined(separator: " · ")
+    }
+}
+
+// MARK: - NotebookRowLabel
+
+private struct NotebookRowLabel: View {
+    let name: String
+    let captureCount: Int
+    let subNotebookCount: Int
 
     var body: some View {
         HStack(spacing: 12) {
-            // Icon card — matches Notebooks App reference
-            Image(systemName: icon)
-                .font(.system(size: 15, weight: .regular))
-                .foregroundStyle(.secondary)
-                .frame(width: 30, height: 30)
-                .background(Color(UIColor.secondarySystemBackground),
-                            in: RoundedRectangle(cornerRadius: 7))
+            Image(systemName: "folder.fill")
+                .font(.system(size: 26, weight: .regular))
+                .foregroundStyle(.blue)
+                .frame(width: 64, height: 64)
+                .background(Color.blue.opacity(0.10), in: RoundedRectangle(cornerRadius: 10))
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(.body)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(name)
+                    .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(.primary)
-                if let sub = subtitle {
-                    Text(sub)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
-
-            Spacer()
-
-            if let badge {
-                Text(badge)
-                    .font(.caption2)
-                    .fontWeight(.medium)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(Color.secondary.opacity(0.15), in: Capsule())
+                Text(countDescription)
+                    .font(.system(size: 13))
                     .foregroundStyle(.secondary)
             }
+            Spacer()
         }
-        .padding(.vertical, 3)
+        .padding(.vertical, 6)
+    }
+
+    private var countDescription: String {
+        if captureCount == 0 && subNotebookCount == 0 { return "Empty" }
+        var parts: [String] = []
+        if captureCount > 0 {
+            parts.append("\(captureCount) \(captureCount == 1 ? "item" : "items")")
+        }
+        if subNotebookCount > 0 {
+            parts.append("\(subNotebookCount) \(subNotebookCount == 1 ? "notebook" : "notebooks")")
+        }
+        return parts.joined(separator: " · ")
     }
 }
 
 // MARK: - BrowserItem
 
 enum BrowserItem: Identifiable, Comparable {
-    case notebook(URL)
-    case capture(URL, isDownloaded: Bool, contentType: String)
+    case notebook(URL, captureCount: Int, subNotebookCount: Int)
+    case capture(URL, isDownloaded: Bool, contentType: String, note: String?, createdAt: String?, sourceURL: String?, companionURL: URL?)
 
     var id: String {
         switch self {
-        case .notebook(let u):       return "nb-\(u.path)"
-        case .capture(let u, _, _): return "cap-\(u.path)"
+        case .notebook(let u, _, _):          return "nb-\(u.path)"
+        case .capture(let u, _, _, _, _, _, _): return "cap-\(u.path)"
         }
     }
 
     var sortKey: String {
         switch self {
-        case .notebook(let u):       return "0-\(u.lastPathComponent)"
-        case .capture(let u, _, _): return "1-\(u.lastPathComponent)"
+        case .notebook(let u, _, _):          return "0-\(u.lastPathComponent.lowercased())"
+        case .capture(let u, _, _, _, _, _, _): return "1-\(u.lastPathComponent.lowercased())"
         }
     }
 
     static func < (lhs: BrowserItem, rhs: BrowserItem) -> Bool {
         lhs.sortKey < rhs.sortKey
-    }
-
-    init?(url: URL, contentType: String? = nil) {
-        let values = try? url.resourceValues(forKeys: [.isDirectoryKey, .ubiquitousItemDownloadingStatusKey])
-        guard let isDir = values?.isDirectory else { return nil }
-
-        if isDir {
-            self = .notebook(url)
-        } else if url.pathExtension == "md" {
-            let status = values?.ubiquitousItemDownloadingStatus
-            let isDownloaded = (status == .current || status == nil)
-            let resolvedType = contentType ?? ContentType.from(filename: url.lastPathComponent)
-            self = .capture(url, isDownloaded: isDownloaded, contentType: resolvedType)
-        } else {
-            return nil
-        }
     }
 }
