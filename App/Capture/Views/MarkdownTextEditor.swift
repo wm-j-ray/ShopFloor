@@ -206,6 +206,8 @@ struct MarkdownTextEditor: UIViewRepresentable {
 
         @objc func dismissKeyboard() { textView?.resignFirstResponder() }
 
+        func applyUndo() { textView?.undoManager?.undo() }
+
         // MARK: Keyboard inset
 
         @objc private func keyboardWillShow(_ notification: Notification) {
@@ -258,6 +260,7 @@ private final class FormattingToolbar: UIToolbar {
         let bold   = button(sf: "bold",   size: 13) { [weak coordinator] in coordinator?.applyBold() }
         let italic = button(sf: "italic", size: 13) { [weak coordinator] in coordinator?.applyItalic() }
         let link   = button(sf: "link",   size: 13) { [weak coordinator] in coordinator?.requestLink() }
+        let undo   = button(sf: "arrow.uturn.backward", size: 13) { [weak coordinator] in coordinator?.applyUndo() }
         let space  = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
         let done   = UIBarButtonItem(
             barButtonSystemItem: .done,
@@ -265,7 +268,7 @@ private final class FormattingToolbar: UIToolbar {
             action: #selector(MarkdownTextEditor.Coordinator.dismissKeyboard)
         )
 
-        items = [h1, h2, h3, space, bold, italic, link, space, done]
+        items = [h1, h2, h3, space, bold, italic, link, space, undo, done]
     }
 
     required init?(coder: NSCoder) { fatalError() }
