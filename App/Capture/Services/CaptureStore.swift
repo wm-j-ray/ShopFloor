@@ -253,15 +253,27 @@ final class CaptureStore: ObservableObject {
         let shopfloorURL = shopfloorFilesURL(relativeTo: base)
         let filename = url.lastPathComponent
 
-        // Capture UUID BEFORE removing from index.
-        // If we removed first, the lookup on the next line would return nil.
+        // Read companion filename BEFORE removing from index.
         let uuid = filenameToUUID[filename]
+        let companionFilename: String? = uuid.flatMap { u in
+            let path = shopfloorURL.appendingPathComponent("\(u).json").path
+            guard let data = fileStore.contents(atPath: path),
+                  let meta = try? JSONDecoder().decode(CaptureMetadata.self, from: data)
+            else { return nil }
+            return meta.companionFilename
+        }
+
         filenameToUUID.removeValue(forKey: filename)
 
         // Delete .json first — crash here leaves .md intact (content preserved).
         if let uuid = uuid {
-            // try? — missing .json is graceful; rebuild() already handles this case.
             try? await shopfloorActor.deleteMetadata(uuid: uuid, shopfloorURL: shopfloorURL)
+        }
+
+        // Delete companion binary (image/pdf/etc) before the .md.
+        if let companion = companionFilename {
+            let companionURL = url.deletingLastPathComponent().appendingPathComponent(companion)
+            try? await shopfloorActor.deleteFile(at: companionURL)
         }
 
         // Delete .md last — crash here leaves a .md with no .json, which is invisible to Karen.
@@ -426,8 +438,18 @@ final class CaptureStore: ObservableObject {
         let base = try requireRoot()
         let shopfloorURL = shopfloorFilesURL(relativeTo: base)
         let oldFilename = url.lastPathComponent
+        let uuid = filenameToUUID[oldFilename]
 
-        // Resolve destination filename (handle collision)
+        // Read current companion filename before moving anything.
+        let oldCompanionFilename: String? = uuid.flatMap { u in
+            let path = shopfloorURL.appendingPathComponent("\(u).json").path
+            guard let data = fileStore.contents(atPath: path),
+                  let meta = try? JSONDecoder().decode(CaptureMetadata.self, from: data)
+            else { return nil }
+            return meta.companionFilename
+        }
+
+        // Resolve destination filename for .md (handle collision).
         let destFilename: String
         let destURL: URL
         let candidate = targetNotebook.appendingPathComponent(oldFilename)
@@ -440,17 +462,33 @@ final class CaptureStore: ObservableObject {
             destURL = candidate
         }
 
-        // Move the file first
+        // Move .md first.
         try await shopfloorActor.moveFile(from: url, to: destURL)
 
-        // Update metadata
-        if let uuid = filenameToUUID[oldFilename] {
+        // Move companion binary and compute its new filename.
+        // If .md was renamed due to collision, mirror the new stem into the companion name.
+        var newCompanionFilename = oldCompanionFilename
+        if let oldCompanion = oldCompanionFilename {
+            let companionSrc = url.deletingLastPathComponent().appendingPathComponent(oldCompanion)
+            let companionExt = URL(fileURLWithPath: oldCompanion).pathExtension
+            let newStem = String(destFilename.dropLast(3)) // strip ".md"
+            let newCompanion = companionExt.isEmpty ? newStem : "\(newStem).\(companionExt)"
+            let companionDst = targetNotebook.appendingPathComponent(newCompanion)
+            if fileStore.fileExists(atPath: companionSrc.path) {
+                try? await shopfloorActor.moveFile(from: companionSrc, to: companionDst)
+                newCompanionFilename = newCompanion
+            }
+        }
+
+        // Update metadata.
+        if let uuid = uuid {
             let newPath = targetNotebook.path
+            let companion = newCompanionFilename
             try await shopfloorActor.readModifyWrite(uuid: uuid, shopfloorURL: shopfloorURL) { meta in
                 meta.notebookPath = newPath
                 meta.filename = destFilename
+                meta.companionFilename = companion
             }
-            // Update in-memory indexes
             filenameToUUID.removeValue(forKey: oldFilename)
             filenameToUUID[destFilename] = uuid
             if let title = titleIndex[oldFilename] {

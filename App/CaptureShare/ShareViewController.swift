@@ -173,7 +173,8 @@ final class ShareViewController: UIViewController {
                 filename: mdName,
                 notebookPath: inbox.path,
                 captureMethod: "share_sheet",
-                contentType: "image"
+                contentType: "image",
+                companionFilename: imgName
             ),
             to: shopfloor
         )
@@ -191,7 +192,8 @@ final class ShareViewController: UIViewController {
                 filename: mdName,
                 notebookPath: inbox.path,
                 captureMethod: "share_sheet",
-                contentType: "image"
+                contentType: "image",
+                companionFilename: imgName
             ),
             to: shopfloor
         )
@@ -211,7 +213,8 @@ final class ShareViewController: UIViewController {
                 filename: mdName,
                 notebookPath: inbox.path,
                 captureMethod: "share_sheet",
-                contentType: contentType
+                contentType: contentType,
+                companionFilename: fileName
             ),
             to: shopfloor
         )

@@ -246,7 +246,7 @@ struct NotebookBrowserView: View {
             let filename = fileURL.lastPathComponent
             let meta = store.metadata(forFilename: filename)
             let contentType = meta?.contentType ?? ContentType.from(filename: filename)
-            let companionURL = isDownloaded ? findCompanion(for: fileURL, contentType: contentType) : nil
+            let companionURL = isDownloaded ? findCompanion(for: fileURL, contentType: contentType, meta: meta) : nil
             return .capture(
                 fileURL,
                 isDownloaded: isDownloaded,
@@ -260,8 +260,14 @@ struct NotebookBrowserView: View {
         return nil
     }
 
-    private func findCompanion(for mdURL: URL, contentType: String) -> URL? {
-        let dir  = mdURL.deletingLastPathComponent()
+    private func findCompanion(for mdURL: URL, contentType: String, meta: CaptureMetadata? = nil) -> URL? {
+        let dir = mdURL.deletingLastPathComponent()
+
+        if let name = meta?.companionFilename {
+            let candidate = dir.appendingPathComponent(name)
+            if FileManager.default.fileExists(atPath: candidate.path) { return candidate }
+        }
+
         let stem = mdURL.deletingPathExtension().lastPathComponent
         let exts: [String]
         switch contentType {
@@ -289,12 +295,13 @@ private struct CaptureCardRow: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
-            thumbnailView
-                .frame(width: 64, height: 64)
-                .clipShape(RoundedRectangle(cornerRadius: 10))
-                .overlay(alignment: .bottomLeading) {
-                    typeBadge.padding(4)
-                }
+            ZStack(alignment: .bottomLeading) {
+                thumbnailView
+                    .frame(width: 64, height: 64)
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                typeBadge.padding(4)
+            }
+            .frame(width: 64, height: 64)
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(title)
@@ -358,8 +365,8 @@ private struct CaptureCardRow: View {
                 .font(.system(size: 10, weight: .semibold))
         }
         .foregroundStyle(.white)
-        .padding(.horizontal, 5)
-        .padding(.vertical, 2.5)
+        .padding(.horizontal, 6)
+        .padding(.vertical, 3)
         .background(color, in: Capsule())
     }
 

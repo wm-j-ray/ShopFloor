@@ -39,6 +39,10 @@ struct CaptureMetadata: Codable, Sendable {
     /// Source URL for share-sheet captures. Omitted when nil.
     var sourceURL: String?
 
+    /// Filename of the companion binary file stored alongside the .md (e.g. "photo.jpg").
+    /// Present for image, pdf, and other binary captures. Omitted when nil.
+    var companionFilename: String?
+
     // ISO8601DateFormatter is non-Sendable (mutable NSObject subclass), so we cannot
     // share a static instance across actors under Swift 6 strict concurrency.
     // Create per-call — acceptable cost for the one-per-capture write path.
@@ -49,7 +53,8 @@ struct CaptureMetadata: Codable, Sendable {
         sourceURL: String? = nil,
         captureNote: String? = nil,
         contentType: String? = nil,
-        displayTitle: String? = nil
+        displayTitle: String? = nil,
+        companionFilename: String? = nil
     ) -> CaptureMetadata {
         // Explicit override wins. Then "link" for share_sheet+URL. Then filename extension.
         let resolvedType: String
@@ -72,7 +77,8 @@ struct CaptureMetadata: Codable, Sendable {
             createdAt: ISO8601DateFormatter().string(from: Date()),
             captureNote: note,
             contentType: resolvedType,
-            sourceURL: sourceURL
+            sourceURL: sourceURL,
+            companionFilename: companionFilename
         )
     }
 
@@ -80,7 +86,7 @@ struct CaptureMetadata: Codable, Sendable {
 
     enum CodingKeys: String, CodingKey {
         case uuid, filename, notebookPath, captureMethod, createdAt
-        case captureNote, contentType, sourceURL, displayTitle
+        case captureNote, contentType, sourceURL, displayTitle, companionFilename
     }
 
     /// Custom encode: omit captureNote and sourceURL keys entirely when nil.
@@ -96,6 +102,7 @@ struct CaptureMetadata: Codable, Sendable {
         try c.encodeIfPresent(captureNote, forKey: .captureNote)
         try c.encodeIfPresent(sourceURL, forKey: .sourceURL)
         try c.encodeIfPresent(displayTitle, forKey: .displayTitle)
+        try c.encodeIfPresent(companionFilename, forKey: .companionFilename)
     }
 }
 

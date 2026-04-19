@@ -127,7 +127,10 @@ struct CaptureDetailView: View {
             }
         }
         .task { await load() }
-        .onDisappear { saveBodyIfChanged() }
+        .onDisappear {
+            saveBodyIfChanged()
+            saveNoteIfEditing()
+        }
         // Rename alert
         .alert("Rename", isPresented: $showRenameAlert) {
             TextField("Name", text: $renameText)
@@ -260,19 +263,7 @@ struct CaptureDetailView: View {
     // MARK: - Load
 
     private func load() async {
-        let values = try? url.resourceValues(forKeys: [.ubiquitousItemDownloadingStatusKey])
-        let status = values?.ubiquitousItemDownloadingStatus
-
-        if status == .notDownloaded {
-            isDownloading = true
-            try? FileManager.default.startDownloadingUbiquitousItem(at: url)
-            for _ in 0..<20 {
-                try? await Task.sleep(nanoseconds: 500_000_000)
-                let refreshed = try? url.resourceValues(forKeys: [.ubiquitousItemDownloadingStatusKey])
-                if refreshed?.ubiquitousItemDownloadingStatus == .current { break }
-            }
-            isDownloading = false
-        }
+        await ensureDownloaded(url)
 
         do {
             content = try String(contentsOf: url, encoding: .utf8)
@@ -289,7 +280,26 @@ struct CaptureDetailView: View {
 
         contentType = meta?.contentType
             ?? ContentType.from(filename: url.lastPathComponent)
-        companionURL = findCompanion()
+
+        if let candidate = findCompanion(meta: meta) {
+            await ensureDownloaded(candidate)
+            companionURL = candidate
+        }
+    }
+
+    /// Triggers iCloud download of a file and waits up to 10 seconds for it to arrive.
+    /// Sets isDownloading so the view shows a "Syncing from iCloud…" overlay.
+    private func ensureDownloaded(_ fileURL: URL) async {
+        let values = try? fileURL.resourceValues(forKeys: [.ubiquitousItemDownloadingStatusKey])
+        guard values?.ubiquitousItemDownloadingStatus == .notDownloaded else { return }
+        isDownloading = true
+        try? FileManager.default.startDownloadingUbiquitousItem(at: fileURL)
+        for _ in 0..<20 {
+            try? await Task.sleep(nanoseconds: 500_000_000)
+            let refreshed = try? fileURL.resourceValues(forKeys: [.ubiquitousItemDownloadingStatusKey])
+            if refreshed?.ubiquitousItemDownloadingStatus == .current { break }
+        }
+        isDownloading = false
     }
 
     // MARK: - Save body
@@ -319,6 +329,15 @@ struct CaptureDetailView: View {
     }
 
     // MARK: - Note
+
+    /// Auto-saves the note draft when navigating away mid-edit, matching text-body behavior.
+    private func saveNoteIfEditing() {
+        guard isEditingNote, noteEditDraft != (captureNote ?? "") else { return }
+        let draft = noteEditDraft
+        Task {
+            try? await store.updateNote(draft, forFilename: url.lastPathComponent)
+        }
+    }
 
     private func saveNote() {
         isSavingNote = true
@@ -451,8 +470,18 @@ struct CaptureDetailView: View {
 
     // MARK: - Companion
 
-    private func findCompanion() -> URL? {
-        let dir  = url.deletingLastPathComponent()
+    /// Locates the companion binary file for this capture.
+    /// Prefers the explicit filename stored in metadata (set at capture time).
+    /// Falls back to a filesystem stem-scan for captures that predate this field.
+    private func findCompanion(meta: CaptureMetadata? = nil) -> URL? {
+        let dir = url.deletingLastPathComponent()
+
+        if let name = meta?.companionFilename {
+            let candidate = dir.appendingPathComponent(name)
+            if FileManager.default.fileExists(atPath: candidate.path) { return candidate }
+        }
+
+        // Legacy fallback: scan for known extensions matching the .md stem.
         let stem = url.deletingPathExtension().lastPathComponent
         let exts: [String]
         switch contentType {

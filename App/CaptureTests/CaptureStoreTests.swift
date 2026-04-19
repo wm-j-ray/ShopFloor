@@ -548,6 +548,125 @@ final class CaptureStoreTests: XCTestCase {
         XCTAssertNil(store.filenameToUUID[filename], "Index entry must be removed when notebook is deleted")
     }
 
+    // MARK: - Companion file (Bug fix: iCloud inconsistencies)
+
+    /// Creates a capture with a companion binary file already in mock.files,
+    /// simulating what the share extension writes (two files, one .md + one .jpg).
+    private func makeImageCapture(title: String = "photo") throws -> (mdPath: String, imgPath: String, jsonPath: String) {
+        let base = try XCTUnwrap(store.rootURL)
+        let inboxURL = base.appendingPathComponent("Inbox", isDirectory: true)
+        mock.directories.append(inboxURL.path)
+
+        // Simulate what ShareViewController writes
+        let mdName  = "photo.md"
+        let imgName = "photo.jpg"
+        let mdPath  = inboxURL.appendingPathComponent(mdName).path
+        let imgPath = inboxURL.appendingPathComponent(imgName).path
+
+        mock.files[mdPath] = "# photo\n\n".data(using: .utf8)
+        mock.files[imgPath] = Data([0xFF, 0xD8, 0xFF]) // fake JPEG header
+
+        let meta = CaptureMetadata.make(
+            filename: mdName,
+            notebookPath: inboxURL.path,
+            captureMethod: "share_sheet",
+            contentType: "image",
+            companionFilename: imgName
+        )
+        let shopfloorURL = base.deletingLastPathComponent()
+            .appendingPathComponent(".shopfloor/files", isDirectory: true)
+        let jsonPath = shopfloorURL.appendingPathComponent("\(meta.uuid).json").path
+        mock.files[jsonPath] = try JSONEncoder().encode(meta)
+        // Warm the index so the store knows about this capture.
+        _ = try store.contents(of: inboxURL)
+        return (mdPath, imgPath, jsonPath)
+    }
+
+    func test_deleteCapture_removesCompanionFile() async throws {
+        let (mdPath, imgPath, _) = try makeImageCapture()
+        let mdURL = URL(fileURLWithPath: mdPath)
+
+        try await store.deleteCapture(at: mdURL)
+
+        XCTAssertNil(mock.files[imgPath], "Companion .jpg must be deleted alongside the .md")
+    }
+
+    func test_deleteCapture_missingCompanionIsGraceful() async throws {
+        let (mdPath, imgPath, _) = try makeImageCapture()
+        mock.files.removeValue(forKey: imgPath) // companion already gone
+        let mdURL = URL(fileURLWithPath: mdPath)
+
+        // Must not throw even though the companion is absent
+        try await store.deleteCapture(at: mdURL)
+        XCTAssertNil(mock.files[mdPath], ".md must still be deleted when companion was already missing")
+    }
+
+    func test_moveCapture_movesCompanionFile() async throws {
+        let base = try XCTUnwrap(store.rootURL)
+        let notesURL = base.appendingPathComponent("Notes", isDirectory: true)
+        mock.directories.append(notesURL.path)
+
+        let (mdPath, imgPath, jsonPath) = try makeImageCapture()
+        let mdURL = URL(fileURLWithPath: mdPath)
+
+        try await store.moveCapture(from: mdURL, to: notesURL)
+
+        let movedMdPath  = notesURL.appendingPathComponent("photo.md").path
+        let movedImgPath = notesURL.appendingPathComponent("photo.jpg").path
+
+        XCTAssertNotNil(mock.files[movedMdPath],  ".md must be in the target notebook after move")
+        XCTAssertNotNil(mock.files[movedImgPath], "Companion .jpg must be moved to target notebook")
+        XCTAssertNil(mock.files[imgPath],         "Companion .jpg must be gone from source notebook")
+
+        // Metadata must reflect the new notebookPath
+        let jsonData = try XCTUnwrap(mock.files[jsonPath])
+        let meta = try JSONDecoder().decode(CaptureMetadata.self, from: jsonData)
+        XCTAssertEqual(meta.notebookPath, notesURL.path)
+        XCTAssertEqual(meta.companionFilename, "photo.jpg")
+    }
+
+    func test_moveCapture_updatesCompanionFilenameOnCollision() async throws {
+        let base = try XCTUnwrap(store.rootURL)
+        let notesURL = base.appendingPathComponent("Notes", isDirectory: true)
+        mock.directories.append(notesURL.path)
+
+        let (mdPath, _, jsonPath) = try makeImageCapture()
+        // Pre-plant a conflicting .md in the destination so the stem gets renamed
+        mock.files[notesURL.appendingPathComponent("photo.md").path] = Data()
+
+        let mdURL = URL(fileURLWithPath: mdPath)
+        try await store.moveCapture(from: mdURL, to: notesURL)
+
+        // .md collision → photo-2.md; companion must mirror → photo-2.jpg
+        let movedImgPath = notesURL.appendingPathComponent("photo-2.jpg").path
+        XCTAssertNotNil(mock.files[movedImgPath], "Companion must be renamed to match the de-collided .md stem")
+
+        let jsonData = try XCTUnwrap(mock.files[jsonPath])
+        let meta = try JSONDecoder().decode(CaptureMetadata.self, from: jsonData)
+        XCTAssertEqual(meta.companionFilename, "photo-2.jpg",
+            "companionFilename in metadata must reflect the renamed companion")
+    }
+
+    func test_companionFilename_roundtripsViaMetadata() throws {
+        let meta = CaptureMetadata.make(
+            filename: "shot.md",
+            notebookPath: "/Inbox",
+            contentType: "image",
+            companionFilename: "shot.jpg"
+        )
+        let data = try JSONEncoder().encode(meta)
+        let decoded = try JSONDecoder().decode(CaptureMetadata.self, from: data)
+        XCTAssertEqual(decoded.companionFilename, "shot.jpg")
+    }
+
+    func test_companionFilename_absentFromJSONWhenNil() throws {
+        let meta = CaptureMetadata.make(filename: "note.md", notebookPath: "/Inbox")
+        let data = try JSONEncoder().encode(meta)
+        let json = try XCTUnwrap(String(data: data, encoding: .utf8))
+        XCTAssertFalse(json.contains("companionFilename"),
+            "companionFilename key must be absent from JSON when nil")
+    }
+
     // MARK: - filenameToUUID index (Sprint 2)
 
     func test_createCapture_updatesFilenameToUUIDIndex() throws {
