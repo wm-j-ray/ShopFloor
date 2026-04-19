@@ -5,136 +5,220 @@ import UniformTypeIdentifiers
 // NSExtensionRequestHandling, which UIViewController already implements.
 final class ShareViewController: UIViewController {
 
-    private let label: UILabel = {
-        let l = UILabel()
-        l.text = "Saving to Capture..."
-        l.textAlignment = .center
-        l.translatesAutoresizingMaskIntoConstraints = false
-        return l
-    }()
+    // MARK: - Pending content
+
+    /// Loaded from the extension context before the folder picker is shown.
+    /// Holds everything needed to write the capture once a target folder is chosen.
+    private struct PendingShare {
+        enum Payload {
+            case link(url: URL)
+            case text(content: String)
+            case imageFile(sourceURL: URL, ext: String)
+            case imageData(data: Data, ext: String)
+            case pdfFile(sourceURL: URL)
+            case movie(title: String)
+            case genericFile(sourceURL: URL, contentType: String)
+        }
+        let payload: Payload
+    }
+
+    private var pending: PendingShare?
+
+    // MARK: - Lifecycle
 
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .systemBackground
-        view.addSubview(label)
+
+        let spinner = UIActivityIndicatorView(style: .large)
+        spinner.translatesAutoresizingMaskIntoConstraints = false
+        spinner.startAnimating()
+        view.addSubview(spinner)
         NSLayoutConstraint.activate([
-            label.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            label.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+            spinner.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            spinner.centerYAnchor.constraint(equalTo: view.centerYAnchor),
         ])
-        Task { await processShare() }
+
+        Task {
+            await setup()
+            spinner.removeFromSuperview()
+        }
     }
 
-    // MARK: - Share processing
+    // MARK: - Setup
 
-    private func processShare() async {
-        defer {
-            extensionContext?.completeRequest(returningItems: [], completionHandler: nil)
-        }
+    private func setup() async {
+        // Resolve the iCloud Documents root on a background thread (Apple requirement).
+        let rootURL: URL? = await Task.detached(priority: .userInitiated) {
+            FileManager.default
+                .url(forUbiquityContainerIdentifier: "iCloud.com.shopfloor.capture")?
+                .appendingPathComponent("Documents", isDirectory: true)
+        }.value
 
+        guard let rootURL else { complete(); return }
+
+        // Load the share payload.
         guard
             let item = extensionContext?.inputItems.first as? NSExtensionItem,
             let attachments = item.attachments, !attachments.isEmpty
-        else { return }
+        else { complete(); return }
 
         do {
-            // Priority: URL > text > image > PDF > movie > generic file.
-            // URL is checked first so web-page shares capture the link, not embedded images.
-            if let provider = attachments.first(where: {
-                $0.hasItemConformingToTypeIdentifier(UTType.url.identifier)
-            }) {
-                let raw = try await provider.loadItem(forTypeIdentifier: UTType.url.identifier)
-                guard let url = raw as? URL else { return }
-                try await Task.detached(priority: .userInitiated) {
-                    try ShareViewController.writeLinkCapture(sourceURL: url)
-                }.value
-
-            } else if let provider = attachments.first(where: {
-                $0.hasItemConformingToTypeIdentifier(UTType.plainText.identifier)
-            }) {
-                let raw = try await provider.loadItem(forTypeIdentifier: UTType.plainText.identifier)
-                guard let text = raw as? String else { return }
-                try await Task.detached(priority: .userInitiated) {
-                    try ShareViewController.writeTextCapture(text: text)
-                }.value
-
-            } else if let provider = attachments.first(where: {
-                $0.hasItemConformingToTypeIdentifier(UTType.image.identifier)
-            }) {
-                let raw = try await provider.loadItem(forTypeIdentifier: UTType.image.identifier)
-                if let fileURL = raw as? URL {
-                    try await Task.detached(priority: .userInitiated) {
-                        try ShareViewController.writeImageCapture(fileURL: fileURL)
-                    }.value
-                } else if let image = raw as? UIImage,
-                          let data = image.jpegData(compressionQuality: 0.9) {
-                    // UIImage is not Sendable — convert to Data on @MainActor before
-                    // crossing to the detached task.
-                    try await Task.detached(priority: .userInitiated) {
-                        try ShareViewController.writeImageCapture(data: data, fileExtension: "jpg")
-                    }.value
-                }
-
-            } else if let provider = attachments.first(where: {
-                $0.hasItemConformingToTypeIdentifier(UTType.pdf.identifier)
-            }) {
-                let raw = try await provider.loadItem(forTypeIdentifier: UTType.pdf.identifier)
-                guard let fileURL = raw as? URL else { return }
-                try await Task.detached(priority: .userInitiated) {
-                    try ShareViewController.writeFileCapture(fileURL: fileURL, contentType: "pdf")
-                }.value
-
-            } else if let provider = attachments.first(where: {
-                $0.hasItemConformingToTypeIdentifier(UTType.movie.identifier)
-            }) {
-                // Videos not copied — file sizes are impractical for iCloud sync.
-                // Capture a reference note instead.
-                let raw = try await provider.loadItem(forTypeIdentifier: UTType.movie.identifier)
-                let title = (raw as? URL).map { $0.deletingPathExtension().lastPathComponent } ?? "video"
-                try await Task.detached(priority: .userInitiated) {
-                    try ShareViewController.writeReferenceNote(title: title, label: "Video")
-                }.value
-
-            } else if let provider = attachments.first {
-                // Generic file fallback.
-                let raw = try await provider.loadItem(forTypeIdentifier: UTType.data.identifier)
-                guard let fileURL = raw as? URL else { return }
-                try await Task.detached(priority: .userInitiated) {
-                    try ShareViewController.writeFileCapture(fileURL: fileURL, contentType: "other")
-                }.value
-            }
+            let payload = try await loadPayload(from: attachments)
+            pending = PendingShare(payload: payload)
         } catch {
-            // Silent — best-effort capture.
+            complete()
+            return
+        }
+
+        showFolderPicker(root: rootURL)
+    }
+
+    // MARK: - Payload loading
+
+    private func loadPayload(from attachments: [NSItemProvider]) async throws -> PendingShare.Payload {
+        if let provider = attachments.first(where: {
+            $0.hasItemConformingToTypeIdentifier(UTType.url.identifier)
+        }) {
+            let raw = try await provider.loadItem(forTypeIdentifier: UTType.url.identifier)
+            guard let url = raw as? URL else { throw URLError(.unknown) }
+            return .link(url: url)
+        }
+
+        if let provider = attachments.first(where: {
+            $0.hasItemConformingToTypeIdentifier(UTType.plainText.identifier)
+        }) {
+            let raw = try await provider.loadItem(forTypeIdentifier: UTType.plainText.identifier)
+            guard let text = raw as? String else { throw URLError(.unknown) }
+            return .text(content: text)
+        }
+
+        if let provider = attachments.first(where: {
+            $0.hasItemConformingToTypeIdentifier(UTType.image.identifier)
+        }) {
+            let raw = try await provider.loadItem(forTypeIdentifier: UTType.image.identifier)
+            if let fileURL = raw as? URL {
+                let ext = fileURL.pathExtension.isEmpty ? "jpg" : fileURL.pathExtension.lowercased()
+                return .imageFile(sourceURL: fileURL, ext: ext)
+            } else if let image = raw as? UIImage,
+                      let data = image.jpegData(compressionQuality: 0.9) {
+                return .imageData(data: data, ext: "jpg")
+            }
+            throw URLError(.unknown)
+        }
+
+        if let provider = attachments.first(where: {
+            $0.hasItemConformingToTypeIdentifier(UTType.pdf.identifier)
+        }) {
+            let raw = try await provider.loadItem(forTypeIdentifier: UTType.pdf.identifier)
+            guard let fileURL = raw as? URL else { throw URLError(.unknown) }
+            return .pdfFile(sourceURL: fileURL)
+        }
+
+        if let provider = attachments.first(where: {
+            $0.hasItemConformingToTypeIdentifier(UTType.movie.identifier)
+        }) {
+            let raw = try await provider.loadItem(forTypeIdentifier: UTType.movie.identifier)
+            let title = (raw as? URL).map { $0.deletingPathExtension().lastPathComponent } ?? "video"
+            return .movie(title: title)
+        }
+
+        if let provider = attachments.first {
+            let raw = try await provider.loadItem(forTypeIdentifier: UTType.data.identifier)
+            guard let fileURL = raw as? URL else { throw URLError(.unknown) }
+            return .genericFile(sourceURL: fileURL, contentType: "other")
+        }
+
+        throw URLError(.unknown)
+    }
+
+    // MARK: - Folder picker
+
+    private func showFolderPicker(root: URL) {
+        let pickerVC = FolderPickerViewController(
+            folderURL: root,
+            isRoot: true,
+            onSave: { [weak self] targetFolder in
+                self?.writeThenComplete(to: targetFolder)
+            },
+            onCancel: { [weak self] in
+                self?.complete()
+            }
+        )
+        let nav = UINavigationController(rootViewController: pickerVC)
+        nav.view.translatesAutoresizingMaskIntoConstraints = false
+        addChild(nav)
+        view.addSubview(nav.view)
+        NSLayoutConstraint.activate([
+            nav.view.topAnchor.constraint(equalTo: view.topAnchor),
+            nav.view.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            nav.view.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            nav.view.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+        ])
+        nav.didMove(toParent: self)
+    }
+
+    // MARK: - Write + complete
+
+    private func writeThenComplete(to folder: URL) {
+        guard let pending else { complete(); return }
+        Task {
+            try? await Task.detached(priority: .userInitiated) {
+                try ShareViewController.write(pending.payload, to: folder)
+            }.value
+            complete()
         }
     }
 
-    // MARK: - Container resolution
-    // nonisolated: UIViewController is @MainActor, but these static methods do only
-    // file I/O — no UI access. nonisolated lets Task.detached call them safely.
-
-    private nonisolated static func resolveContainer() throws -> (inbox: URL, shopfloor: URL) {
-        let fm = FileManager.default
-        guard let container = fm.url(forUbiquityContainerIdentifier: "iCloud.com.shopfloor.capture") else {
-            throw URLError(.unsupportedURL)
-        }
-        let inbox     = container.appendingPathComponent("Documents/Inbox", isDirectory: true)
-        let shopfloor = container.appendingPathComponent(".shopfloor/files", isDirectory: true)
-        try fm.createDirectory(at: inbox,     withIntermediateDirectories: true)
-        try fm.createDirectory(at: shopfloor, withIntermediateDirectories: true)
-        return (inbox, shopfloor)
+    private func complete() {
+        extensionContext?.completeRequest(returningItems: [], completionHandler: nil)
     }
 
     // MARK: - Write helpers
+    // nonisolated: called from Task.detached — no UI access, only file I/O.
 
-    private nonisolated static func writeLinkCapture(sourceURL: URL) throws {
-        let (inbox, shopfloor) = try resolveContainer()
+    private nonisolated static func write(_ payload: PendingShare.Payload, to folder: URL) throws {
+        let fm = FileManager.default
+        try fm.createDirectory(at: folder, withIntermediateDirectories: true)
+        let shopfloor = try resolveShopfloor()
+        try fm.createDirectory(at: shopfloor, withIntermediateDirectories: true)
+
+        switch payload {
+        case .link(let url):
+            try writeLinkCapture(sourceURL: url, to: folder, shopfloor: shopfloor)
+        case .text(let content):
+            try writeTextCapture(text: content, to: folder, shopfloor: shopfloor)
+        case .imageFile(let sourceURL, let ext):
+            try writeImageCapture(fileURL: sourceURL, ext: ext, to: folder, shopfloor: shopfloor)
+        case .imageData(let data, let ext):
+            try writeImageCapture(data: data, fileExtension: ext, to: folder, shopfloor: shopfloor)
+        case .pdfFile(let sourceURL):
+            try writeFileCapture(fileURL: sourceURL, contentType: "pdf", to: folder, shopfloor: shopfloor)
+        case .movie(let title):
+            try writeReferenceNote(title: title, label: "Video", to: folder, shopfloor: shopfloor)
+        case .genericFile(let sourceURL, let contentType):
+            try writeFileCapture(fileURL: sourceURL, contentType: contentType, to: folder, shopfloor: shopfloor)
+        }
+    }
+
+    private nonisolated static func resolveShopfloor() throws -> URL {
+        guard let container = FileManager.default
+            .url(forUbiquityContainerIdentifier: "iCloud.com.shopfloor.capture") else {
+            throw URLError(.unsupportedURL)
+        }
+        let shopfloor = container.appendingPathComponent(".shopfloor/files", isDirectory: true)
+        return shopfloor
+    }
+
+    private nonisolated static func writeLinkCapture(sourceURL: URL, to folder: URL, shopfloor: URL) throws {
         let title    = sourceURL.host ?? sourceURL.absoluteString
-        let filename = uniqueFilename(from: title, in: inbox)
-        try "# \(title)\n\n".write(to: inbox.appendingPathComponent(filename),
+        let filename = uniqueFilename(from: title, in: folder)
+        try "# \(title)\n\n".write(to: folder.appendingPathComponent(filename),
                                    atomically: true, encoding: .utf8)
         try flushMetadata(
             CaptureMetadata.make(
                 filename: filename,
-                notebookPath: inbox.path,
+                notebookPath: folder.path,
                 captureMethod: "share_sheet",
                 sourceURL: sourceURL.absoluteString
             ),
@@ -142,36 +226,33 @@ final class ShareViewController: UIViewController {
         )
     }
 
-    private nonisolated static func writeTextCapture(text: String) throws {
-        let (inbox, shopfloor) = try resolveContainer()
+    private nonisolated static func writeTextCapture(text: String, to folder: URL, shopfloor: URL) throws {
         let firstLine = String(text.split(separator: "\n", maxSplits: 1).first ?? "capture")
         let title    = String(firstLine.prefix(60)).trimmingCharacters(in: .whitespaces)
-        let filename = uniqueFilename(from: title.isEmpty ? "capture" : title, in: inbox)
-        try "# \(title)\n\n\(text)".write(to: inbox.appendingPathComponent(filename),
+        let filename = uniqueFilename(from: title.isEmpty ? "capture" : title, in: folder)
+        try "# \(title)\n\n\(text)".write(to: folder.appendingPathComponent(filename),
                                           atomically: true, encoding: .utf8)
         try flushMetadata(
             CaptureMetadata.make(
                 filename: filename,
-                notebookPath: inbox.path,
+                notebookPath: folder.path,
                 captureMethod: "share_sheet"
             ),
             to: shopfloor
         )
     }
 
-    private nonisolated static func writeImageCapture(fileURL: URL) throws {
-        let (inbox, shopfloor) = try resolveContainer()
-        let stem      = fileURL.deletingPathExtension().lastPathComponent
-        let ext       = fileURL.pathExtension.isEmpty ? "jpg" : fileURL.pathExtension.lowercased()
-        let mdName    = uniqueFilename(from: stem, in: inbox)
-        let imgName   = mdName.replacingOccurrences(of: ".md", with: ".\(ext)")
-        try FileManager.default.copyItem(at: fileURL, to: inbox.appendingPathComponent(imgName))
-        try "# \(stem)\n\n".write(to: inbox.appendingPathComponent(mdName),
+    private nonisolated static func writeImageCapture(fileURL: URL, ext: String, to folder: URL, shopfloor: URL) throws {
+        let stem    = fileURL.deletingPathExtension().lastPathComponent
+        let mdName  = uniqueFilename(from: stem, in: folder)
+        let imgName = mdName.replacingOccurrences(of: ".md", with: ".\(ext)")
+        try FileManager.default.copyItem(at: fileURL, to: folder.appendingPathComponent(imgName))
+        try "# \(stem)\n\n".write(to: folder.appendingPathComponent(mdName),
                                   atomically: true, encoding: .utf8)
         try flushMetadata(
             CaptureMetadata.make(
                 filename: mdName,
-                notebookPath: inbox.path,
+                notebookPath: folder.path,
                 captureMethod: "share_sheet",
                 contentType: "image",
                 companionFilename: imgName
@@ -180,17 +261,16 @@ final class ShareViewController: UIViewController {
         )
     }
 
-    private nonisolated static func writeImageCapture(data: Data, fileExtension: String) throws {
-        let (inbox, shopfloor) = try resolveContainer()
-        let mdName  = uniqueFilename(from: "image", in: inbox)
+    private nonisolated static func writeImageCapture(data: Data, fileExtension: String, to folder: URL, shopfloor: URL) throws {
+        let mdName  = uniqueFilename(from: "image", in: folder)
         let imgName = mdName.replacingOccurrences(of: ".md", with: ".\(fileExtension)")
-        try data.write(to: inbox.appendingPathComponent(imgName), options: .atomic)
-        try "# Image\n\n".write(to: inbox.appendingPathComponent(mdName),
+        try data.write(to: folder.appendingPathComponent(imgName), options: .atomic)
+        try "# Image\n\n".write(to: folder.appendingPathComponent(mdName),
                                 atomically: true, encoding: .utf8)
         try flushMetadata(
             CaptureMetadata.make(
                 filename: mdName,
-                notebookPath: inbox.path,
+                notebookPath: folder.path,
                 captureMethod: "share_sheet",
                 contentType: "image",
                 companionFilename: imgName
@@ -199,19 +279,18 @@ final class ShareViewController: UIViewController {
         )
     }
 
-    private nonisolated static func writeFileCapture(fileURL: URL, contentType: String) throws {
-        let (inbox, shopfloor) = try resolveContainer()
+    private nonisolated static func writeFileCapture(fileURL: URL, contentType: String, to folder: URL, shopfloor: URL) throws {
         let stem     = fileURL.deletingPathExtension().lastPathComponent
         let ext      = fileURL.pathExtension.lowercased()
-        let mdName   = uniqueFilename(from: stem, in: inbox)
+        let mdName   = uniqueFilename(from: stem, in: folder)
         let fileName = mdName.replacingOccurrences(of: ".md", with: ext.isEmpty ? "" : ".\(ext)")
-        try FileManager.default.copyItem(at: fileURL, to: inbox.appendingPathComponent(fileName))
-        try "# \(stem)\n\n".write(to: inbox.appendingPathComponent(mdName),
+        try FileManager.default.copyItem(at: fileURL, to: folder.appendingPathComponent(fileName))
+        try "# \(stem)\n\n".write(to: folder.appendingPathComponent(mdName),
                                   atomically: true, encoding: .utf8)
         try flushMetadata(
             CaptureMetadata.make(
                 filename: mdName,
-                notebookPath: inbox.path,
+                notebookPath: folder.path,
                 captureMethod: "share_sheet",
                 contentType: contentType,
                 companionFilename: fileName
@@ -220,15 +299,14 @@ final class ShareViewController: UIViewController {
         )
     }
 
-    private nonisolated static func writeReferenceNote(title: String, label: String) throws {
-        let (inbox, shopfloor) = try resolveContainer()
-        let filename = uniqueFilename(from: title.isEmpty ? label.lowercased() : title, in: inbox)
+    private nonisolated static func writeReferenceNote(title: String, label: String, to folder: URL, shopfloor: URL) throws {
+        let filename = uniqueFilename(from: title.isEmpty ? label.lowercased() : title, in: folder)
         try "# \(title.isEmpty ? label : title)\n\nShared \(label.lowercased()) via Capture.\n"
-            .write(to: inbox.appendingPathComponent(filename), atomically: true, encoding: .utf8)
+            .write(to: folder.appendingPathComponent(filename), atomically: true, encoding: .utf8)
         try flushMetadata(
             CaptureMetadata.make(
                 filename: filename,
-                notebookPath: inbox.path,
+                notebookPath: folder.path,
                 captureMethod: "share_sheet"
             ),
             to: shopfloor
@@ -246,7 +324,6 @@ final class ShareViewController: UIViewController {
     }
 
     // MARK: - Filename helpers
-    // Mirrors CaptureStore — extension runs in a separate process and cannot share the class.
 
     private nonisolated static func uniqueFilename(from title: String, in directory: URL) -> String {
         let base = makeFilename(from: title)

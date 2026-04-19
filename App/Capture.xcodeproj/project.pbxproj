@@ -13,6 +13,7 @@
 		184432D8818A2DCDF50B0393 /* NotebookBrowserView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D9CD5C9302D58811686D84E /* NotebookBrowserView.swift */; };
 		18FF4D6D7F4116BAD6E78A52 /* CaptureMetadata.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA3B1304442217DEF5C10E08 /* CaptureMetadata.swift */; };
 		30547DC1F96BFAD9102585B9 /* CaptureFilename.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D9098767E28C3994B8A1FC2 /* CaptureFilename.swift */; };
+		FB48748B5642A9697B5ADD33 /* FolderPickerViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 210D0F89B73487C0510F91F3 /* FolderPickerViewController.swift */; };
 		42862EA357E60BBC339867CE /* ShareViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4754F9A278D4FD3CD35C5ECA /* ShareViewController.swift */; };
 		42A55A1036646D846C531509 /* CreateCaptureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A55F23F76ED9926FE0F4FE8C /* CreateCaptureView.swift */; };
 		6D48AE360459C50299D791C1 /* MockFileStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A718D7D390D47F9A259C3BA7 /* MockFileStore.swift */; };
@@ -70,6 +71,7 @@
 		2A722AD8395FB20A933C999A /* CaptureStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureStore.swift; sourceTree = "<group>"; };
 		371BF34031209295DCFF1539 /* FileStoring.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileStoring.swift; sourceTree = "<group>"; };
 		3F1564858CB9C4B3338D2052 /* CaptureShare.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = CaptureShare.entitlements; sourceTree = "<group>"; };
+		210D0F89B73487C0510F91F3 /* FolderPickerViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FolderPickerViewController.swift; sourceTree = "<group>"; };
 		4754F9A278D4FD3CD35C5ECA /* ShareViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareViewController.swift; sourceTree = "<group>"; };
 		58F2EA4C9ABF8C99AD94ACE5 /* App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App.swift; sourceTree = "<group>"; };
 		59FF855331896C0BFB4435CC /* ImageCaptureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageCaptureView.swift; sourceTree = "<group>"; };
@@ -124,6 +126,7 @@
 			children = (
 				3F1564858CB9C4B3338D2052 /* CaptureShare.entitlements */,
 				258A05AE38350552EDDF9EF4 /* Info.plist */,
+				210D0F89B73487C0510F91F3 /* FolderPickerViewController.swift */,
 				4754F9A278D4FD3CD35C5ECA /* ShareViewController.swift */,
 			);
 			path = CaptureShare;
@@ -302,6 +305,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				18FF4D6D7F4116BAD6E78A52 /* CaptureMetadata.swift in Sources */,
+				FB48748B5642A9697B5ADD33 /* FolderPickerViewController.swift in Sources */,
 				42862EA357E60BBC339867CE /* ShareViewController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
