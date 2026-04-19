@@ -135,11 +135,18 @@ final class ShareViewController: UIViewController {
     // MARK: - Folder picker
 
     private func showFolderPicker(root: URL) {
+        guard let payload = pending?.payload else { complete(); return }
+
+        // Seed the title from content; updated live as Karen types.
+        var userTitle = ShareViewController.candidateTitle(for: payload)
+
         let pickerVC = FolderPickerViewController(
             folderURL: root,
             isRoot: true,
+            candidateTitle: userTitle,
+            onTitleChanged: { userTitle = $0 },
             onSave: { [weak self] targetFolder in
-                self?.writeThenComplete(to: targetFolder)
+                self?.writeThenComplete(to: targetFolder, title: userTitle)
             },
             onCancel: { [weak self] in
                 self?.complete()
@@ -160,11 +167,11 @@ final class ShareViewController: UIViewController {
 
     // MARK: - Write + complete
 
-    private func writeThenComplete(to folder: URL) {
+    private func writeThenComplete(to folder: URL, title: String) {
         guard let pending else { complete(); return }
         Task {
             try? await Task.detached(priority: .userInitiated) {
-                try ShareViewController.write(pending.payload, to: folder)
+                try ShareViewController.write(pending.payload, title: title, to: folder)
             }.value
             complete()
         }
@@ -174,30 +181,55 @@ final class ShareViewController: UIViewController {
         extensionContext?.completeRequest(returningItems: [], completionHandler: nil)
     }
 
+    // MARK: - Candidate title
+
+    /// Derives a default title from share content before Karen can edit it.
+    private nonisolated static func candidateTitle(for payload: PendingShare.Payload) -> String {
+        switch payload {
+        case .link(let url):
+            return url.host ?? url.absoluteString
+        case .text(let content):
+            let first = String(content.split(separator: "\n", maxSplits: 1).first ?? "capture")
+            let trimmed = String(first.prefix(60)).trimmingCharacters(in: .whitespaces)
+            return trimmed.isEmpty ? "capture" : trimmed
+        case .imageFile(let url, _):
+            return url.deletingPathExtension().lastPathComponent
+        case .imageData:
+            return "Image"
+        case .pdfFile(let url):
+            return url.deletingPathExtension().lastPathComponent
+        case .movie(let title):
+            return title.isEmpty ? "Video" : title
+        case .genericFile(let url, _):
+            return url.deletingPathExtension().lastPathComponent
+        }
+    }
+
     // MARK: - Write helpers
     // nonisolated: called from Task.detached — no UI access, only file I/O.
 
-    private nonisolated static func write(_ payload: PendingShare.Payload, to folder: URL) throws {
+    private nonisolated static func write(_ payload: PendingShare.Payload, title: String, to folder: URL) throws {
         let fm = FileManager.default
         try fm.createDirectory(at: folder, withIntermediateDirectories: true)
         let shopfloor = try resolveShopfloor()
         try fm.createDirectory(at: shopfloor, withIntermediateDirectories: true)
+        let t = title.trimmingCharacters(in: .whitespaces)
 
         switch payload {
         case .link(let url):
-            try writeLinkCapture(sourceURL: url, to: folder, shopfloor: shopfloor)
+            try writeLinkCapture(sourceURL: url, title: t, to: folder, shopfloor: shopfloor)
         case .text(let content):
-            try writeTextCapture(text: content, to: folder, shopfloor: shopfloor)
+            try writeTextCapture(text: content, title: t, to: folder, shopfloor: shopfloor)
         case .imageFile(let sourceURL, let ext):
-            try writeImageCapture(fileURL: sourceURL, ext: ext, to: folder, shopfloor: shopfloor)
+            try writeImageCapture(fileURL: sourceURL, title: t, ext: ext, to: folder, shopfloor: shopfloor)
         case .imageData(let data, let ext):
-            try writeImageCapture(data: data, fileExtension: ext, to: folder, shopfloor: shopfloor)
+            try writeImageCapture(data: data, title: t, fileExtension: ext, to: folder, shopfloor: shopfloor)
         case .pdfFile(let sourceURL):
-            try writeFileCapture(fileURL: sourceURL, contentType: "pdf", to: folder, shopfloor: shopfloor)
-        case .movie(let title):
-            try writeReferenceNote(title: title, label: "Video", to: folder, shopfloor: shopfloor)
+            try writeFileCapture(fileURL: sourceURL, title: t, contentType: "pdf", to: folder, shopfloor: shopfloor)
+        case .movie:
+            try writeReferenceNote(title: t, label: "Video", to: folder, shopfloor: shopfloor)
         case .genericFile(let sourceURL, let contentType):
-            try writeFileCapture(fileURL: sourceURL, contentType: contentType, to: folder, shopfloor: shopfloor)
+            try writeFileCapture(fileURL: sourceURL, title: t, contentType: contentType, to: folder, shopfloor: shopfloor)
         }
     }
 
@@ -210,8 +242,7 @@ final class ShareViewController: UIViewController {
         return shopfloor
     }
 
-    private nonisolated static func writeLinkCapture(sourceURL: URL, to folder: URL, shopfloor: URL) throws {
-        let title    = sourceURL.host ?? sourceURL.absoluteString
+    private nonisolated static func writeLinkCapture(sourceURL: URL, title: String, to folder: URL, shopfloor: URL) throws {
         let filename = uniqueFilename(from: title, in: folder)
         try "# \(title)\n\n".write(to: folder.appendingPathComponent(filename),
                                    atomically: true, encoding: .utf8)
@@ -220,79 +251,80 @@ final class ShareViewController: UIViewController {
                 filename: filename,
                 notebookPath: folder.path,
                 captureMethod: "share_sheet",
-                sourceURL: sourceURL.absoluteString
+                sourceURL: sourceURL.absoluteString,
+                displayTitle: title
             ),
             to: shopfloor
         )
     }
 
-    private nonisolated static func writeTextCapture(text: String, to folder: URL, shopfloor: URL) throws {
-        let firstLine = String(text.split(separator: "\n", maxSplits: 1).first ?? "capture")
-        let title    = String(firstLine.prefix(60)).trimmingCharacters(in: .whitespaces)
-        let filename = uniqueFilename(from: title.isEmpty ? "capture" : title, in: folder)
+    private nonisolated static func writeTextCapture(text: String, title: String, to folder: URL, shopfloor: URL) throws {
+        let filename = uniqueFilename(from: title, in: folder)
         try "# \(title)\n\n\(text)".write(to: folder.appendingPathComponent(filename),
                                           atomically: true, encoding: .utf8)
         try flushMetadata(
             CaptureMetadata.make(
                 filename: filename,
                 notebookPath: folder.path,
-                captureMethod: "share_sheet"
+                captureMethod: "share_sheet",
+                displayTitle: title
             ),
             to: shopfloor
         )
     }
 
-    private nonisolated static func writeImageCapture(fileURL: URL, ext: String, to folder: URL, shopfloor: URL) throws {
-        let stem    = fileURL.deletingPathExtension().lastPathComponent
-        let mdName  = uniqueFilename(from: stem, in: folder)
+    private nonisolated static func writeImageCapture(fileURL: URL, title: String, ext: String, to folder: URL, shopfloor: URL) throws {
+        let mdName  = uniqueFilename(from: title, in: folder)
         let imgName = mdName.replacingOccurrences(of: ".md", with: ".\(ext)")
         try FileManager.default.copyItem(at: fileURL, to: folder.appendingPathComponent(imgName))
-        try "# \(stem)\n\n".write(to: folder.appendingPathComponent(mdName),
-                                  atomically: true, encoding: .utf8)
+        try "# \(title)\n\n".write(to: folder.appendingPathComponent(mdName),
+                                   atomically: true, encoding: .utf8)
         try flushMetadata(
             CaptureMetadata.make(
                 filename: mdName,
                 notebookPath: folder.path,
                 captureMethod: "share_sheet",
                 contentType: "image",
+                displayTitle: title,
                 companionFilename: imgName
             ),
             to: shopfloor
         )
     }
 
-    private nonisolated static func writeImageCapture(data: Data, fileExtension: String, to folder: URL, shopfloor: URL) throws {
-        let mdName  = uniqueFilename(from: "image", in: folder)
+    private nonisolated static func writeImageCapture(data: Data, title: String, fileExtension: String, to folder: URL, shopfloor: URL) throws {
+        let mdName  = uniqueFilename(from: title, in: folder)
         let imgName = mdName.replacingOccurrences(of: ".md", with: ".\(fileExtension)")
         try data.write(to: folder.appendingPathComponent(imgName), options: .atomic)
-        try "# Image\n\n".write(to: folder.appendingPathComponent(mdName),
-                                atomically: true, encoding: .utf8)
+        try "# \(title)\n\n".write(to: folder.appendingPathComponent(mdName),
+                                   atomically: true, encoding: .utf8)
         try flushMetadata(
             CaptureMetadata.make(
                 filename: mdName,
                 notebookPath: folder.path,
                 captureMethod: "share_sheet",
                 contentType: "image",
+                displayTitle: title,
                 companionFilename: imgName
             ),
             to: shopfloor
         )
     }
 
-    private nonisolated static func writeFileCapture(fileURL: URL, contentType: String, to folder: URL, shopfloor: URL) throws {
-        let stem     = fileURL.deletingPathExtension().lastPathComponent
+    private nonisolated static func writeFileCapture(fileURL: URL, title: String, contentType: String, to folder: URL, shopfloor: URL) throws {
         let ext      = fileURL.pathExtension.lowercased()
-        let mdName   = uniqueFilename(from: stem, in: folder)
+        let mdName   = uniqueFilename(from: title, in: folder)
         let fileName = mdName.replacingOccurrences(of: ".md", with: ext.isEmpty ? "" : ".\(ext)")
         try FileManager.default.copyItem(at: fileURL, to: folder.appendingPathComponent(fileName))
-        try "# \(stem)\n\n".write(to: folder.appendingPathComponent(mdName),
-                                  atomically: true, encoding: .utf8)
+        try "# \(title)\n\n".write(to: folder.appendingPathComponent(mdName),
+                                   atomically: true, encoding: .utf8)
         try flushMetadata(
             CaptureMetadata.make(
                 filename: mdName,
                 notebookPath: folder.path,
                 captureMethod: "share_sheet",
                 contentType: contentType,
+                displayTitle: title,
                 companionFilename: fileName
             ),
             to: shopfloor
@@ -307,7 +339,8 @@ final class ShareViewController: UIViewController {
             CaptureMetadata.make(
                 filename: filename,
                 notebookPath: folder.path,
-                captureMethod: "share_sheet"
+                captureMethod: "share_sheet",
+                displayTitle: title.isEmpty ? nil : title
             ),
             to: shopfloor
         )
