@@ -18,6 +18,7 @@
 		42A55A1036646D846C531509 /* CreateCaptureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A55F23F76ED9926FE0F4FE8C /* CreateCaptureView.swift */; };
 		6D48AE360459C50299D791C1 /* MockFileStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A718D7D390D47F9A259C3BA7 /* MockFileStore.swift */; };
 		7F8AD73873D4CA9ED4159288 /* CaptureStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A722AD8395FB20A933C999A /* CaptureStore.swift */; };
+		FE8D3C56FA3949B2B7EBB3E3 /* OGFetcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 055A5F604ADA4D6C9D02BDD8 /* OGFetcher.swift */; };
 		7FEB6C6A9674D1D18EF89D3E /* CaptureStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11A213095D9C5AEF8D8FFB88 /* CaptureStoreTests.swift */; };
 		91D9580D37F3DF58373AF0DD /* App.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58F2EA4C9ABF8C99AD94ACE5 /* App.swift */; };
 		9C62E154261DB7CD5862F282 /* CaptureDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B044A9E545405F25800369DF /* CaptureDetailView.swift */; };
@@ -69,6 +70,7 @@
 		258A05AE38350552EDDF9EF4 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		298D1D0616D9C3236B5705BC /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		2A722AD8395FB20A933C999A /* CaptureStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureStore.swift; sourceTree = "<group>"; };
+		055A5F604ADA4D6C9D02BDD8 /* OGFetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OGFetcher.swift; sourceTree = "<group>"; };
 		371BF34031209295DCFF1539 /* FileStoring.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileStoring.swift; sourceTree = "<group>"; };
 		3F1564858CB9C4B3338D2052 /* CaptureShare.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = CaptureShare.entitlements; sourceTree = "<group>"; };
 		210D0F89B73487C0510F91F3 /* FolderPickerViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FolderPickerViewController.swift; sourceTree = "<group>"; };
@@ -136,6 +138,7 @@
 			isa = PBXGroup;
 			children = (
 				2A722AD8395FB20A933C999A /* CaptureStore.swift */,
+				055A5F604ADA4D6C9D02BDD8 /* OGFetcher.swift */,
 				371BF34031209295DCFF1539 /* FileStoring.swift */,
 			);
 			path = Services;
@@ -287,6 +290,7 @@
 				30547DC1F96BFAD9102585B9 /* CaptureFilename.swift in Sources */,
 				E66A16BEB7ADF6FC8C928587 /* CaptureMetadata.swift in Sources */,
 				7F8AD73873D4CA9ED4159288 /* CaptureStore.swift in Sources */,
+				FE8D3C56FA3949B2B7EBB3E3 /* OGFetcher.swift in Sources */,
 				025C04FC309ACAB3F2C8C895 /* ContentView.swift in Sources */,
 				42A55A1036646D846C531509 /* CreateCaptureView.swift in Sources */,
 				B963E1977CD93E3A5BFBCB1F /* CreateNotebookView.swift in Sources */,

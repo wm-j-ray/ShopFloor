@@ -389,6 +389,62 @@ final class CaptureStore: ObservableObject {
         }
     }
 
+    // MARK: - OG enrichment
+
+    /// Fetches OpenGraph metadata for a link capture and persists it to the sidecar JSON.
+    /// No-ops if enrichment was already attempted (ogFetchedAt is set).
+    /// Updates: displayTitle (if still a bare domain), captureNote (if empty), companionFilename (og image).
+    func enrichLinkCapture(filename: String) async {
+        guard let base = try? requireRoot() else { return }
+        let shopfloorURL = shopfloorFilesURL(relativeTo: base)
+        guard let uuid = filenameToUUID[filename] else { return }
+        let metaPath = shopfloorURL.appendingPathComponent("\(uuid).json").path
+        guard let data = fileStore.contents(atPath: metaPath),
+              let meta = try? JSONDecoder().decode(CaptureMetadata.self, from: data),
+              meta.contentType == "link",
+              meta.ogFetchedAt == nil,
+              let rawURL = meta.sourceURL,
+              let sourceURL = URL(string: rawURL)
+        else { return }
+
+        let og = await fetchOGMetadata(from: sourceURL)
+        let fetchedAt = ISO8601DateFormatter().string(from: Date())
+
+        // Download OG image and save alongside the .md
+        var newCompanionFilename: String? = meta.companionFilename
+        if let imageURL = og.imageURL, meta.companionFilename == nil {
+            let ext = imageURL.pathExtension.split(separator: "?").first.map(String.init) ?? "jpg"
+            let safeExt = ext.isEmpty ? "jpg" : ext.lowercased()
+            let stem = String(filename.dropLast(3))
+            let imgFilename = "\(stem)-og.\(safeExt)"
+            let notebookURL = URL(fileURLWithPath: meta.notebookPath, isDirectory: true)
+            let imgDestURL = notebookURL.appendingPathComponent(imgFilename)
+            if let (imgData, _) = try? await URLSession.shared.data(from: imageURL),
+               (try? imgData.write(to: imgDestURL, options: .atomic)) != nil {
+                newCompanionFilename = imgFilename
+            }
+        }
+
+        let finalCompanionFilename = newCompanionFilename
+        let ogTitle = og.title
+        let ogDesc  = og.description
+        try? await shopfloorActor.readModifyWrite(uuid: uuid, shopfloorURL: shopfloorURL) { m in
+            m.ogFetchedAt = fetchedAt
+            if let title = ogTitle, !title.isEmpty, m.displayTitle == nil {
+                m.displayTitle = title
+            }
+            if let desc = ogDesc, !desc.isEmpty, m.captureNote == nil {
+                m.captureNote = desc
+            }
+            if let companion = finalCompanionFilename {
+                m.companionFilename = companion
+            }
+        }
+
+        titleIndex[filename] = metadata(forFilename: filename)?.displayTitle
+        lastIndexUpdate = Date()
+    }
+
     // MARK: - Display title
 
     /// Returns Karen's display title for a capture. Checks the in-memory title index first;

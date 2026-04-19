@@ -127,6 +127,10 @@ struct CaptureDetailView: View {
             }
         }
         .task { await load() }
+        .onChange(of: store.lastIndexUpdate) { _, _ in
+            guard contentType == "link" else { return }
+            Task { await load() }
+        }
         .onDisappear {
             saveBodyIfChanged()
             saveNoteIfEditing()
@@ -285,6 +289,11 @@ struct CaptureDetailView: View {
             await ensureDownloaded(candidate)
             companionURL = candidate
         }
+
+        // Kick off OG enrichment in background for un-enriched link captures.
+        if contentType == "link", meta?.ogFetchedAt == nil {
+            Task { await store.enrichLinkCapture(filename: url.lastPathComponent) }
+        }
     }
 
     /// Triggers iCloud download of a file and waits up to 10 seconds for it to arrive.
@@ -403,16 +412,26 @@ struct CaptureDetailView: View {
             }
         } label: {
             ZStack(alignment: .bottomTrailing) {
-                LinearGradient(
-                    colors: [Color.blue.opacity(0.18), Color.blue.opacity(0.06)],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-                .frame(height: 220)
-                .overlay {
-                    Image(systemName: "link")
-                        .font(.system(size: 60, weight: .ultraLight))
-                        .foregroundStyle(.blue.opacity(0.20))
+                if let companion = companionURL,
+                   let img = UIImage(contentsOfFile: companion.path) {
+                    Image(uiImage: img)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 220)
+                        .clipped()
+                } else {
+                    LinearGradient(
+                        colors: [Color.blue.opacity(0.18), Color.blue.opacity(0.06)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                    .frame(height: 220)
+                    .overlay {
+                        Image(systemName: "link")
+                            .font(.system(size: 60, weight: .ultraLight))
+                            .foregroundStyle(.blue.opacity(0.20))
+                    }
                 }
 
                 // Visual affordance only — whole hero is the tap target

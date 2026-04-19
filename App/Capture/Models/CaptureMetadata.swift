@@ -43,6 +43,10 @@ struct CaptureMetadata: Codable, Sendable {
     /// Present for image, pdf, and other binary captures. Omitted when nil.
     var companionFilename: String?
 
+    /// ISO 8601 timestamp when OG enrichment was last attempted for a link capture.
+    /// Nil means enrichment has not been attempted yet.
+    var ogFetchedAt: String?
+
     // ISO8601DateFormatter is non-Sendable (mutable NSObject subclass), so we cannot
     // share a static instance across actors under Swift 6 strict concurrency.
     // Create per-call — acceptable cost for the one-per-capture write path.
@@ -78,7 +82,8 @@ struct CaptureMetadata: Codable, Sendable {
             captureNote: note,
             contentType: resolvedType,
             sourceURL: sourceURL,
-            companionFilename: companionFilename
+            companionFilename: companionFilename,
+            ogFetchedAt: nil
         )
     }
 
@@ -86,7 +91,7 @@ struct CaptureMetadata: Codable, Sendable {
 
     enum CodingKeys: String, CodingKey {
         case uuid, filename, notebookPath, captureMethod, createdAt
-        case captureNote, contentType, sourceURL, displayTitle, companionFilename
+        case captureNote, contentType, sourceURL, displayTitle, companionFilename, ogFetchedAt
     }
 
     /// Custom encode: omit captureNote and sourceURL keys entirely when nil.
@@ -103,6 +108,7 @@ struct CaptureMetadata: Codable, Sendable {
         try c.encodeIfPresent(sourceURL, forKey: .sourceURL)
         try c.encodeIfPresent(displayTitle, forKey: .displayTitle)
         try c.encodeIfPresent(companionFilename, forKey: .companionFilename)
+        try c.encodeIfPresent(ogFetchedAt, forKey: .ogFetchedAt)
     }
 }
 
