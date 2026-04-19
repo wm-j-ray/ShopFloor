@@ -23,6 +23,9 @@ struct NotebookBrowserView: View {
     // Move
     @State private var movingCaptureURL: URL? = nil
 
+    // Go To
+    @State private var showGoTo = false
+
     private var captureCount: Int {
         items.filter { if case .capture = $0 { true } else { false } }.count
     }
@@ -105,10 +108,19 @@ struct NotebookBrowserView: View {
                     Button("New Notebook", systemImage: "folder") {
                         showCreateNotebook = true
                     }
+                    Divider()
+                    Button("Go To...", systemImage: "arrow.right.circle") {
+                        showGoTo = true
+                    }
                 } label: {
                     Image(systemName: "plus")
                 }
             }
+        }
+        .sheet(isPresented: $showGoTo) {
+            GoToPickerView()
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
         }
         .sheet(isPresented: $showCreateCapture, onDismiss: { Task { await refresh() } }) {
             CreateCaptureView(destinationURL: url)
@@ -187,9 +199,6 @@ struct NotebookBrowserView: View {
                     CaptureCardRow(
                         title: store.displayTitle(for: fileURL),
                         contentType: contentType,
-                        note: note,
-                        createdAt: createdAt,
-                        sourceURL: sourceURL,
                         companionURL: companionURL
                     )
                 }
@@ -212,15 +221,15 @@ struct NotebookBrowserView: View {
             } else {
                 HStack(spacing: 12) {
                     Image(systemName: "icloud.and.arrow.down")
-                        .font(.system(size: 24, weight: .regular))
+                        .font(.system(size: 16, weight: .regular))
                         .foregroundStyle(.secondary)
-                        .frame(width: 64, height: 64)
-                        .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
-                    VStack(alignment: .leading, spacing: 3) {
+                        .frame(width: 36, height: 36)
+                        .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
+                    VStack(alignment: .leading, spacing: 2) {
                         Text(store.displayTitle(for: fileURL))
                             .font(.system(size: 15, weight: .semibold))
                         Text("Syncing from iCloud...")
-                            .font(.system(size: 13))
+                            .font(.system(size: 12))
                             .foregroundStyle(.secondary)
                     }
                 }
@@ -303,47 +312,28 @@ struct NotebookBrowserView: View {
 private struct CaptureCardRow: View {
     let title: String
     let contentType: String
-    let note: String?
-    let createdAt: String?
-    let sourceURL: String?
     let companionURL: URL?
 
     @State private var thumbnail: UIImage?
 
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
+        HStack(spacing: 12) {
             ZStack(alignment: .bottomLeading) {
                 thumbnailView
-                    .frame(width: 64, height: 64)
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
-                typeBadge.padding(4)
+                    .frame(width: 36, height: 36)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                typeBadge.padding(2)
             }
-            .frame(width: 64, height: 64)
+            .frame(width: 36, height: 36)
 
-            VStack(alignment: .leading, spacing: 3) {
-                Text(title)
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(.primary)
-                    .lineLimit(2)
+            Text(title)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(.primary)
+                .lineLimit(1)
 
-                if let note, !note.isEmpty {
-                    Text(note)
-                        .font(.system(size: 13))
-                        .foregroundStyle(.secondary)
-                        .lineLimit(2)
-                }
-
-                Spacer(minLength: 4)
-
-                if let dateText {
-                    Text(dateText)
-                        .font(.system(size: 12))
-                        .foregroundStyle(.tertiary)
-                }
-            }
-            .padding(.vertical, 2)
+            Spacer()
         }
-        .padding(.vertical, 6)
+        .padding(.vertical, 4)
         .task(id: companionURL) {
             guard let url = companionURL, contentType == "image" else { return }
             thumbnail = await Task.detached(priority: .utility) {
@@ -368,22 +358,22 @@ private struct CaptureCardRow: View {
         return ZStack {
             color.opacity(0.12)
             Image(systemName: symbol)
-                .font(.system(size: 26, weight: .regular))
+                .font(.system(size: 16, weight: .regular))
                 .foregroundStyle(color.opacity(0.9))
         }
     }
 
     private var typeBadge: some View {
         let (symbol, label, color) = badgeAppearance
-        return HStack(spacing: 3) {
+        return HStack(spacing: 2) {
             Image(systemName: symbol)
-                .font(.system(size: 9, weight: .semibold))
+                .font(.system(size: 7, weight: .semibold))
             Text(label)
-                .font(.system(size: 10, weight: .semibold))
+                .font(.system(size: 7, weight: .semibold))
         }
         .foregroundStyle(.white)
-        .padding(.horizontal, 6)
-        .padding(.vertical, 3)
+        .padding(.horizontal, 4)
+        .padding(.vertical, 2)
         .background(color, in: Capsule())
     }
 
@@ -405,29 +395,6 @@ private struct CaptureCardRow: View {
         }
     }
 
-    private var domain: String? {
-        guard let raw = sourceURL,
-              let host = URL(string: raw)?.host else { return nil }
-        return host.hasPrefix("www.") ? String(host.dropFirst(4)) : host
-    }
-
-    private var dateText: String? {
-        var parts: [String] = []
-        if let d = domain { parts.append(d) }
-        if let iso = createdAt, let date = ISO8601DateFormatter().date(from: iso) {
-            let now = Date()
-            if now.timeIntervalSince(date) < 86400 {
-                let f = RelativeDateTimeFormatter()
-                f.unitsStyle = .abbreviated
-                parts.append(f.localizedString(for: date, relativeTo: now))
-            } else {
-                let f = DateFormatter()
-                f.dateFormat = "MMM d"
-                parts.append(f.string(from: date))
-            }
-        }
-        return parts.isEmpty ? nil : parts.joined(separator: " · ")
-    }
 }
 
 // MARK: - NotebookRowLabel
@@ -440,22 +407,22 @@ private struct NotebookRowLabel: View {
     var body: some View {
         HStack(spacing: 12) {
             Image(systemName: "folder.fill")
-                .font(.system(size: 26, weight: .regular))
+                .font(.system(size: 16, weight: .regular))
                 .foregroundStyle(.blue)
-                .frame(width: 64, height: 64)
-                .background(Color.blue.opacity(0.10), in: RoundedRectangle(cornerRadius: 10))
+                .frame(width: 36, height: 36)
+                .background(Color.blue.opacity(0.10), in: RoundedRectangle(cornerRadius: 8))
 
-            VStack(alignment: .leading, spacing: 3) {
+            VStack(alignment: .leading, spacing: 2) {
                 Text(name)
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(.primary)
                 Text(countDescription)
-                    .font(.system(size: 13))
+                    .font(.system(size: 12))
                     .foregroundStyle(.secondary)
             }
             Spacer()
         }
-        .padding(.vertical, 6)
+        .padding(.vertical, 4)
     }
 
     private var countDescription: String {

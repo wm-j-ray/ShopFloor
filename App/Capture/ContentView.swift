@@ -57,6 +57,11 @@ struct ContentView: View {
                 navigationPath.append(newURL)
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: .navigateToURL)) { notif in
+            if let targetURL = notif.object as? URL {
+                navigationPath = [targetURL]
+            }
+        }
         .alert("Error", isPresented: Binding(
             get: { store.error != nil },
             set: { if !$0 { store.error = nil } }

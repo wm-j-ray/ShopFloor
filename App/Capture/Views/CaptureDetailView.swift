@@ -99,22 +99,32 @@ struct CaptureDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                HStack(spacing: 4) {
+                if isEditingBody {
                     Button {
-                        rapidFireCreate()
+                        markdownCoordinator?.dismissKeyboard()
                     } label: {
-                        Image(systemName: "plus")
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundStyle(.blue)
+                            .font(.system(size: 26))
                     }
-                    Menu {
-                        Button("Rename") {
-                            renameText = store.displayTitle(for: url)
-                            showRenameAlert = true
+                } else {
+                    HStack(spacing: 4) {
+                        Button {
+                            rapidFireCreate()
+                        } label: {
+                            Image(systemName: "plus")
                         }
-                        Button("Move to...") {
-                            showMovePicker = true
+                        Menu {
+                            Button("Rename") {
+                                renameText = store.displayTitle(for: url)
+                                showRenameAlert = true
+                            }
+                            Button("Move to...") {
+                                showMovePicker = true
+                            }
+                        } label: {
+                            Image(systemName: "ellipsis.circle")
                         }
-                    } label: {
-                        Image(systemName: "ellipsis.circle")
                     }
                 }
             }
@@ -481,15 +491,15 @@ struct CaptureDetailView: View {
                     .foregroundStyle(.secondary)
             }
             Spacer()
-            HStack(spacing: 3) {
+            HStack(spacing: 2) {
                 Image(systemName: "link")
-                    .font(.system(size: 9, weight: .semibold))
+                    .font(.system(size: 7, weight: .semibold))
                 Text("Link")
-                    .font(.system(size: 10, weight: .semibold))
+                    .font(.system(size: 7, weight: .semibold))
             }
             .foregroundStyle(.white)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
+            .padding(.horizontal, 5)
+            .padding(.vertical, 2)
             .background(Color.blue, in: Capsule())
         }
     }

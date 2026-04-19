@@ -11,14 +11,18 @@ struct CreateCaptureView: View {
     @State private var captureNote = ""
     @State private var isSaving = false
     @State private var error: Error?
+    @FocusState private var titleFocused: Bool
 
     var body: some View {
         NavigationStack {
             Form {
                 Section("Title") {
                     TextField("What is this?", text: $title)
+                        .font(.system(size: 18, weight: .semibold))
                         .autocorrectionDisabled(false)
+                        .focused($titleFocused)
                 }
+                .onAppear { titleFocused = true }
                 Section("Content") {
                     TextEditor(text: $bodyText)
                         .frame(minHeight: 160)
