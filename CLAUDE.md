@@ -111,19 +111,20 @@ The inbox notebook is a first-class concept — where captures land when Karen d
 | MCP architecture design session | ✓ Complete 2026-04-18 (see Notes/Session-2026-04-18-MCP-Design.md) |
 | Sprint 4 UI — layout fixes, Notebooks App styling, rename, move, full-bleed | ✓ On main 2026-04-18 (see Notes/Session-2026-04-18-Sprint-4-UI.md) |
 | Sprint 4 polish — Stash-style card rows, link detail view, affordance language | ✓ On main 2026-04-18 (see Notes/Session-2026-04-18-Sprint4-Polish.md) |
-| Notebook picker tree drill-down | Next |
-| Share sheet note UI — capture note + title from Share extension | Next |
+| Bug fixes — companion file tracking, OG image in hero, save consistency, pill clip | ✓ On main 2026-04-18 (see Notes/Session-2026-04-18-BugFixes.md) |
+| Enhancements #1–#9 — all Karen's Enhancements notebook items | ✓ On main 2026-04-18 (see Notes/Session-2026-04-18-Enhancements.md) |
 | MCP Sprint — App/MCPServer/ target (macOS, stdio, storyengine_route tool) | After Task 0 audit |
 
-**App — what's on main as of 2026-04-18 (end of sprint 4 polish session):**
-- `CaptureStore`: `ShopfloorFileActor`, `filenameToUUID` + `titleIndex` indexes, `displayTitle(for:)`, `renameCapture`, `renameNotebook`, `moveCapture`, `deleteCapture`, `deleteNotebook`, `rebuild`, `updateNote`, `captureNote(forFilename:)`, `contentType(forFilename:)`, `metadata(forFilename:)` (full metadata in one read)
-- `CaptureMetadata`: `displayTitle`, `captureNote`, `sourceURL`, `createdAt`, `contentType` — all exposed via `metadata(forFilename:)`
-- `CaptureFilename`: `derivedTitle(for:)` is the slug→human fallback; `displayTitle(for:)` shim kept for backward compat
+**App — what's on main as of 2026-04-18 (end of enhancements session):**
+- `CaptureStore`: `ShopfloorFileActor`, `filenameToUUID` + `titleIndex` indexes, `displayTitle(for:)`, `renameCapture`, `renameNotebook`, `moveCapture`, `deleteCapture`, `deleteNotebook`, `rebuild`, `updateNote`, `captureNote(forFilename:)`, `contentType(forFilename:)`, `metadata(forFilename:)`, `enrichLinkCapture(filename:)`, `createCapture()` (returns URL, @discardableResult)
+- `CaptureMetadata`: `displayTitle`, `captureNote`, `sourceURL`, `createdAt`, `contentType`, `companionFilename`, `ogFetchedAt` — all optional fields omit from JSON when nil
+- `OGFetcher.swift`: `fetchOGMetadata(from:)` — async, 8s timeout, parses og:title/og:description/og:image from HTML
 - `CaptureStore.startMetadataQuery()` — live iCloud index via NSMetadataQuery
 - `CaptureStore.rebuild()` — full repair: removes orphans + imports external `.md` files
-- Views: `NotebookBrowserView` (Stash-style card rows: 64pt thumbnail, type badge, note preview, domain·date; notebook rows with item+sub-notebook counts; context menus with Rename/Move/Delete), `CaptureDetailView` (link detail: tappable hero, Open pill, title+domain, metadata bar, nav bar pencil→rename; Notes section: square.and.pencil header, tappable ghost text; markdown editor for text), `MarkdownTextEditor` (formatting toolbar at 36pt), `NotebookPickerView` (flat notebook list — tree drill-down is next), `CreateCaptureView`, `SettingsView`, `ContentView`
+- Navigation: path-based `NavigationStack` (`[URL]` path); persisted to UserDefaults; restored on relaunch with stale-URL filtering
+- Views: `NotebookBrowserView` (sort by alpha/date, notebooks-first/documents-first via @AppStorage), `CaptureDetailView` (link hero shows OG image; `+` rapid-fire creates in same notebook; undo in toolbar), `MarkdownTextEditor` (undo button added), `NotebookPickerView` (tree drill-down, "Move Here" at every level), `FolderPickerViewController` (share extension tree picker with title field), `SettingsView` (sort settings)
 - `Info.plist`: `UILaunchScreen = {}` — native-resolution support. `UIRequiresFullScreen = YES` — prevents iPad split-view.
-- `CaptureShare` extension target — all content types; version tied to parent app
+- `CaptureShare` extension — all content types; FolderPickerViewController (tree picker + title field at root)
 - `ImageCaptureView`, `PDFCaptureView` — companion file display
 - Inbox notebook created on-demand (first capture)
 - 45 XCTest passing
@@ -134,9 +135,9 @@ The inbox notebook is a first-class concept — where captures land when Karen d
 - Ghost text "Tap to add a note..." = empty editable field, tap to activate
 - Apply this pattern consistently to all noun detail pages going forward
 
-**Karen's Enhancements notebook (iCloud, discovered 2026-04-18):**
-Karen uses the Capture app itself to file enhancement requests. Check `Enhancements/` notebook in iCloud at session start.
-Current requests: quick-capture title, remember-where-you-were, renaming (long-press), saving-links (OG), setting-target-folder (tree picker in share sheet), sorting.
+**Karen's Enhancements notebook (iCloud):**
+Karen uses the Capture app itself to file enhancement requests. All 9 enhancements are complete as of 2026-04-18.
+Check `Enhancements/` notebook in iCloud at session start for any new requests.
 
 **Platform constraint — system keyboard:**
 iOS provides no API to resize the system keyboard. Height is set by the OS (~280pt portrait, ~150pt landscape). The `FormattingToolbar` above it is 36pt (reduced from 44pt). Users can activate a floating/resizable keyboard by long-pressing the Globe/Emoji key → "Floating" — we cannot trigger this programmatically.
@@ -149,13 +150,9 @@ iOS provides no API to resize the system keyboard. Height is set by the OS (~280
 - Design doc: `~/.gstack/projects/wm-j-ray-ShopFloor/wmjray-main-design-20260418-084517.md`
 
 **Next session — priority queue:**
-1. **Notebook picker tree drill-down** — `NotebookPickerView` flat list → level-by-level browser with back nav inside sheet; "Move Here" at every level; sticky context header throughout (Karen's "Setting Target Folder" enhancement)
-2. **Share sheet note UI** — currently dismisses immediately; needs title + note input before saving (Karen's "Quick Capture title" enhancement)
+1. **Device test share extension** — first real hardware run (all 9 enhancements now complete)
+2. **MCP Sprint** — `App/MCPServer/` target after Task 0 audit
 3. **Raw title backfill** — on `CaptureDetailView.load()`, if `titleIndex[filename]` is nil, read first `# ` heading from body and write it as `displayTitle`
-4. **Remember where you were** — state restoration on relaunch to exact capture + scroll position (Karen's enhancement)
-5. **OG metadata** — background-fetch title, image, abstract at link capture time; store in metadata; show in link detail hero (Karen's "Saving Links" enhancement)
-6. **Sorting** — drag handles (primary), alpha + date options, persists per notebook (Karen's enhancement)
-7. **Device test share extension** — first real hardware run
 
 ## What's Next (in order)
 

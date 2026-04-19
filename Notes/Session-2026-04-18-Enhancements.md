@@ -84,8 +84,56 @@ Fast path: hitting Save without navigating still goes to Inbox.
 
 ---
 
+## Enhancement #6 — Sorting
+
+**Request:** Global sort order setting. Karen's preferred sorting stays consistent. Control whether documents appear above or below notebooks.
+
+**What was built:**
+- Two `@AppStorage` keys: `sort_order` ("alpha" / "date_newest") and `notebook_position` ("notebooks_first" / "documents_first").
+- `NotebookBrowserView`: added `sortedItems` computed property; `refresh()` stores raw items; sorting is applied at render time via `@AppStorage` values — settings changes take effect immediately without re-fetching.
+- Date sort for captures uses ISO8601 `createdAt` string comparison (lexicographic = chronological). Notebooks sort alphabetically under any sort order (no creation date tracked for directories).
+- `SettingsView`: new "Sorting" section with two `Picker` controls.
+
+---
+
+## Enhancement #7 — Remember Where You Were
+
+**Request:** App remembers where Karen left off when closed.
+
+**What was built:**
+- Switched `ContentView` to `NavigationStack(path: $navigationPath)` with `navigationDestination(for: URL.self)`.
+- Destination handler: `.md` extension → `CaptureDetailView`; directory → `NotebookBrowserView`.
+- `NotebookBrowserView`: changed `NavigationLink { DestinationView() }` to `NavigationLink(value: url)` for both notebook rows and capture rows.
+- `ContentView.saveNavPath()` — persists `[URL]` as `[String]` via `UserDefaults` on every path change.
+- `ContentView.loadValidatedNavPath()` — restores and filters out stale URLs (deleted/moved files).
+
+---
+
+## Enhancement #8 — Add Undo to Keyboard Menu
+
+**Request:** Undo in the keyboard toolbar.
+
+**What was built:**
+- Added `applyUndo()` to `MarkdownTextEditor.Coordinator` — calls `textView.undoManager?.undo()`.
+- Added `arrow.uturn.backward` button to `FormattingToolbar` between Link and Done.
+
+---
+
+## Enhancement #9 — Rapid Fire Document Creation
+
+**Request:** From a document view, tap `+` to create a new document in the same notebook and navigate there immediately.
+Reference: Alfons Schmidt Notebooks App (img0422, img0423 in Inbox).
+
+**What was built:**
+- `createCapture()` in `CaptureStore` is now `@discardableResult` and returns the new file `URL`.
+- `CaptureDetailView.rapidFireCreate()`: creates a new "capture" doc in `url.deletingLastPathComponent()`, posts `Notification.Name.rapidFireCreateCapture` with the new URL.
+- `ContentView`: `onReceive(.rapidFireCreateCapture)` appends the new URL to `navigationPath` → instant navigation.
+- `+` button added to trailing toolbar in `CaptureDetailView` (alongside existing `ellipsis.circle` menu).
+
+---
+
 ## State of Main (end of session)
 
 - All tests passing (45 XCTest)
-- Enhancements #1–#5 complete and on main
-- Next: Enhancement #6 (Sorting), #7 (Remember Where You Were), #8 (Undo in keyboard menu), #9 (Rapid Fire document creation)
+- All 9 Karen's Enhancements complete and on main
+- Next: Device test share extension (first real hardware run), then MCP sprint
