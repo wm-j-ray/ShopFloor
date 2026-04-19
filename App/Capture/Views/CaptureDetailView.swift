@@ -491,11 +491,11 @@ struct CaptureDetailView: View {
                     .foregroundStyle(.secondary)
             }
             Spacer()
-            HStack(spacing: 2) {
+            HStack(spacing: 3) {
                 Image(systemName: "link")
-                    .font(.system(size: 7, weight: .semibold))
+                    .font(.system(size: 9, weight: .semibold))
                 Text("Link")
-                    .font(.system(size: 7, weight: .semibold))
+                    .font(.system(size: 9, weight: .semibold))
             }
             .foregroundStyle(.white)
             .padding(.horizontal, 5)

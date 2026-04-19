@@ -221,19 +221,18 @@ struct NotebookBrowserView: View {
             } else {
                 HStack(spacing: 12) {
                     Image(systemName: "icloud.and.arrow.down")
-                        .font(.system(size: 16, weight: .regular))
+                        .font(.system(size: 20, weight: .regular))
                         .foregroundStyle(.secondary)
-                        .frame(width: 36, height: 36)
-                        .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
+                        .frame(width: 28, alignment: .center)
                     VStack(alignment: .leading, spacing: 2) {
                         Text(store.displayTitle(for: fileURL))
-                            .font(.system(size: 15, weight: .semibold))
+                            .font(.system(size: 16, weight: .regular))
                         Text("Syncing from iCloud...")
                             .font(.system(size: 12))
                             .foregroundStyle(.secondary)
                     }
                 }
-                .padding(.vertical, 4)
+                .padding(.vertical, 6)
             }
         }
     }
@@ -318,22 +317,17 @@ private struct CaptureCardRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            ZStack(alignment: .bottomLeading) {
-                thumbnailView
-                    .frame(width: 36, height: 36)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                typeBadge.padding(2)
-            }
-            .frame(width: 36, height: 36)
+            iconView
+                .frame(width: 28, height: 28, alignment: .center)
 
             Text(title)
-                .font(.system(size: 15, weight: .semibold))
+                .font(.system(size: 16, weight: .regular))
                 .foregroundStyle(.primary)
                 .lineLimit(1)
 
             Spacer()
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, 6)
         .task(id: companionURL) {
             guard let url = companionURL, contentType == "image" else { return }
             thumbnail = await Task.detached(priority: .utility) {
@@ -343,38 +337,19 @@ private struct CaptureCardRow: View {
     }
 
     @ViewBuilder
-    private var thumbnailView: some View {
+    private var iconView: some View {
         if contentType == "image", let img = thumbnail {
             Image(uiImage: img)
                 .resizable()
                 .scaledToFill()
+                .frame(width: 28, height: 28)
+                .clipShape(RoundedRectangle(cornerRadius: 6))
         } else {
-            iconBackground
-        }
-    }
-
-    private var iconBackground: some View {
-        let (symbol, color) = typeAppearance
-        return ZStack {
-            color.opacity(0.12)
+            let (symbol, color) = typeAppearance
             Image(systemName: symbol)
-                .font(.system(size: 16, weight: .regular))
-                .foregroundStyle(color.opacity(0.9))
+                .font(.system(size: 20, weight: .regular))
+                .foregroundStyle(color)
         }
-    }
-
-    private var typeBadge: some View {
-        let (symbol, label, color) = badgeAppearance
-        return HStack(spacing: 2) {
-            Image(systemName: symbol)
-                .font(.system(size: 7, weight: .semibold))
-            Text(label)
-                .font(.system(size: 7, weight: .semibold))
-        }
-        .foregroundStyle(.white)
-        .padding(.horizontal, 4)
-        .padding(.vertical, 2)
-        .background(color, in: Capsule())
     }
 
     private var typeAppearance: (String, Color) {
@@ -385,16 +360,6 @@ private struct CaptureCardRow: View {
         default:      return ("doc.text", Color(.systemPurple))
         }
     }
-
-    private var badgeAppearance: (String, String, Color) {
-        switch contentType {
-        case "link":  return ("link", "Link", .blue)
-        case "pdf":   return ("doc.richtext", "PDF", .orange)
-        case "image": return ("photo", "Image", .teal)
-        default:      return ("doc.text", "Text", Color(.systemPurple))
-        }
-    }
-
 }
 
 // MARK: - NotebookRowLabel
@@ -407,14 +372,13 @@ private struct NotebookRowLabel: View {
     var body: some View {
         HStack(spacing: 12) {
             Image(systemName: "folder.fill")
-                .font(.system(size: 16, weight: .regular))
+                .font(.system(size: 20, weight: .regular))
                 .foregroundStyle(.blue)
-                .frame(width: 36, height: 36)
-                .background(Color.blue.opacity(0.10), in: RoundedRectangle(cornerRadius: 8))
+                .frame(width: 28, alignment: .center)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(name)
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.system(size: 16, weight: .regular))
                     .foregroundStyle(.primary)
                 Text(countDescription)
                     .font(.system(size: 12))
@@ -422,7 +386,7 @@ private struct NotebookRowLabel: View {
             }
             Spacer()
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, 6)
     }
 
     private var countDescription: String {
