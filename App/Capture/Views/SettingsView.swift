@@ -8,11 +8,25 @@ import SwiftUI
 struct SettingsView: View {
     @EnvironmentObject var store: CaptureStore
 
+    @AppStorage("sort_order") private var sortOrder: String = "alpha"
+    @AppStorage("notebook_position") private var notebookPosition: String = "notebooks_first"
+
     @State private var isRebuilding = false
     @State private var rebuildSummary: String = ""
 
     var body: some View {
         Form {
+            Section("Sorting") {
+                Picker("Sort order", selection: $sortOrder) {
+                    Text("Alphabetical").tag("alpha")
+                    Text("Newest first").tag("date_newest")
+                }
+                Picker("Show notebooks", selection: $notebookPosition) {
+                    Text("Before documents").tag("notebooks_first")
+                    Text("After documents").tag("documents_first")
+                }
+            }
+
             Section {
                 Button {
                     runRebuild()

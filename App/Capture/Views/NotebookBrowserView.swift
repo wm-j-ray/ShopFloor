@@ -8,6 +8,9 @@ struct NotebookBrowserView: View {
     let url: URL
     let title: String
 
+    @AppStorage("sort_order") private var sortOrder: String = "alpha"
+    @AppStorage("notebook_position") private var notebookPosition: String = "notebooks_first"
+
     @State private var items: [BrowserItem] = []
     @State private var showCreateCapture = false
     @State private var showCreateNotebook = false
@@ -22,6 +25,24 @@ struct NotebookBrowserView: View {
 
     private var captureCount: Int {
         items.filter { if case .capture = $0 { true } else { false } }.count
+    }
+
+    private var sortedItems: [BrowserItem] {
+        let nbFirst = notebookPosition != "documents_first"
+        let byDate  = sortOrder == "date_newest"
+        return items.sorted { a, b in
+            let aIsNb: Bool
+            let bIsNb: Bool
+            if case .notebook = a { aIsNb = true } else { aIsNb = false }
+            if case .notebook = b { bIsNb = true } else { bIsNb = false }
+            if aIsNb != bIsNb { return nbFirst ? aIsNb : !aIsNb }
+            if byDate {
+                let aDate = BrowserItem.createdAt(of: a)
+                let bDate = BrowserItem.createdAt(of: b)
+                if aDate != bDate { return aDate > bDate }
+            }
+            return BrowserItem.name(of: a).localizedCaseInsensitiveCompare(BrowserItem.name(of: b)) == .orderedAscending
+        }
     }
 
     var body: some View {
@@ -45,18 +66,18 @@ struct NotebookBrowserView: View {
                         .listRowSeparator(.hidden)
                 }
 
-                ForEach(items) { item in
+                ForEach(sortedItems) { item in
                     row(for: item)
                         .listRowInsets(EdgeInsets(top: 0, leading: 12, bottom: 0, trailing: 12))
                         .listRowSeparator(.hidden)
                 }
                 .onDelete { indexSet in
                     let captures = indexSet.compactMap { index -> URL? in
-                        if case .capture(let fileURL, _, _, _, _, _, _) = items[index] { return fileURL }
+                        if case .capture(let fileURL, _, _, _, _, _, _) = sortedItems[index] { return fileURL }
                         return nil
                     }
                     let notebooks = indexSet.compactMap { index -> URL? in
-                        if case .notebook(let folderURL, _, _) = items[index] { return folderURL }
+                        if case .notebook(let folderURL, _, _) = sortedItems[index] { return folderURL }
                         return nil
                     }
                     Task {
@@ -219,7 +240,7 @@ struct NotebookBrowserView: View {
         defer { isLoading = false }
         do {
             let urls = try store.contents(of: url)
-            items = urls.compactMap { buildItem(from: $0) }.sorted()
+            items = urls.compactMap { buildItem(from: $0) }
         } catch {
             store.error = error
         }
@@ -476,5 +497,17 @@ enum BrowserItem: Identifiable, Comparable {
 
     static func < (lhs: BrowserItem, rhs: BrowserItem) -> Bool {
         lhs.sortKey < rhs.sortKey
+    }
+
+    static func name(of item: BrowserItem) -> String {
+        switch item {
+        case .notebook(let u, _, _):          return u.lastPathComponent
+        case .capture(let u, _, _, _, _, _, _): return u.lastPathComponent
+        }
+    }
+
+    static func createdAt(of item: BrowserItem) -> String {
+        if case .capture(_, _, _, _, let date, _, _) = item { return date ?? "" }
+        return ""
     }
 }
