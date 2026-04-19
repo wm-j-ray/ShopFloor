@@ -167,9 +167,7 @@ struct NotebookBrowserView: View {
     private func row(for item: BrowserItem) -> some View {
         switch item {
         case .notebook(let notebookURL, let captureCount, let subNotebookCount):
-            NavigationLink {
-                NotebookBrowserView(url: notebookURL, title: notebookURL.lastPathComponent)
-            } label: {
+            NavigationLink(value: notebookURL) {
                 NotebookRowLabel(
                     name: notebookURL.lastPathComponent,
                     captureCount: captureCount,
@@ -185,9 +183,7 @@ struct NotebookBrowserView: View {
 
         case .capture(let fileURL, let isDownloaded, let contentType, let note, let createdAt, let sourceURL, let companionURL):
             if isDownloaded {
-                NavigationLink {
-                    CaptureDetailView(url: fileURL)
-                } label: {
+                NavigationLink(value: fileURL) {
                     CaptureCardRow(
                         title: store.displayTitle(for: fileURL),
                         contentType: contentType,

@@ -4,13 +4,14 @@ struct ContentView: View {
     @EnvironmentObject var store: CaptureStore
     @State private var isResolving = true
     @State private var showSettings = false
+    @State private var navigationPath: [URL] = []
 
     var body: some View {
         Group {
             if isResolving {
                 ProgressView("Loading...")
             } else if let root = store.rootURL {
-                NavigationStack {
+                NavigationStack(path: $navigationPath) {
                     NotebookBrowserView(url: root, title: "Capture")
                         .toolbar {
                             ToolbarItem(placement: .navigationBarLeading) {
@@ -20,6 +21,13 @@ struct ContentView: View {
                                     Image(systemName: "gear")
                                 }
                                 .accessibilityLabel("Settings")
+                            }
+                        }
+                        .navigationDestination(for: URL.self) { url in
+                            if url.pathExtension == "md" {
+                                CaptureDetailView(url: url)
+                            } else {
+                                NotebookBrowserView(url: url, title: url.lastPathComponent)
                             }
                         }
                 }
@@ -34,13 +42,15 @@ struct ContentView: View {
         }
         .task {
             await store.resolveContainer()
-            // Start live iCloud index tracking. Must be called after rootURL is set.
             store.startMetadataQuery()
             isResolving = false
-            // Clean orphaned .shopfloor records. Background so it doesn't delay first render.
+            navigationPath = loadValidatedNavPath()
             Task(priority: .utility) {
                 await store.rebuild()
             }
+        }
+        .onChange(of: navigationPath) { _, newPath in
+            saveNavPath(newPath)
         }
         .alert("Error", isPresented: Binding(
             get: { store.error != nil },
@@ -49,6 +59,22 @@ struct ContentView: View {
             Button("OK") { store.error = nil }
         } message: {
             Text(store.error?.localizedDescription ?? "")
+        }
+    }
+
+    // MARK: - Nav path persistence
+
+    private let navPathKey = "nav_path_urls"
+
+    private func saveNavPath(_ urls: [URL]) {
+        UserDefaults.standard.set(urls.map(\.path), forKey: navPathKey)
+    }
+
+    private func loadValidatedNavPath() -> [URL] {
+        guard let paths = UserDefaults.standard.stringArray(forKey: navPathKey) else { return [] }
+        return paths.compactMap { path -> URL? in
+            let url = URL(fileURLWithPath: path)
+            return FileManager.default.fileExists(atPath: path) ? url : nil
         }
     }
 }
