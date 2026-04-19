@@ -199,6 +199,7 @@ final class CaptureStore: ObservableObject {
 
     /// Creates a capture as a Markdown file and writes its .shopfloor metadata.
     /// Also eagerly adds filename → UUID to the in-memory index.
+    @discardableResult
     func createCapture(
         title: String,
         body: String,
@@ -206,7 +207,7 @@ final class CaptureStore: ObservableObject {
         captureNote: String? = nil,
         sourceURL: String? = nil,
         captureMethod: String = "direct"
-    ) throws {
+    ) throws -> URL {
         let base = try requireRoot()
         let destination = notebook ?? base.appendingPathComponent(kInboxName, isDirectory: true)
 
@@ -238,6 +239,7 @@ final class CaptureStore: ObservableObject {
         // Eagerly update indexes so title/note/delete work immediately.
         filenameToUUID[filename] = metadata.uuid
         titleIndex[filename] = title
+        return fileURL
     }
 
     /// Deletes the capture at the given URL and its .shopfloor metadata record.

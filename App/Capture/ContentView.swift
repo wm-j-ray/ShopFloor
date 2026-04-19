@@ -52,6 +52,11 @@ struct ContentView: View {
         .onChange(of: navigationPath) { _, newPath in
             saveNavPath(newPath)
         }
+        .onReceive(NotificationCenter.default.publisher(for: .rapidFireCreateCapture)) { notif in
+            if let newURL = notif.object as? URL {
+                navigationPath.append(newURL)
+            }
+        }
         .alert("Error", isPresented: Binding(
             get: { store.error != nil },
             set: { if !$0 { store.error = nil } }

@@ -1,5 +1,9 @@
 import SwiftUI
 
+extension Notification.Name {
+    static let rapidFireCreateCapture = Notification.Name("rapidFireCreateCapture")
+}
+
 /// Displays a single capture. Branches by contentType:
 ///   text    → MarkdownTextEditor (always editable; auto-saves on disappear)
 ///   link    → hero + title + domain + metadata bar + notes
@@ -95,16 +99,23 @@ struct CaptureDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                Menu {
-                    Button("Rename") {
-                        renameText = store.displayTitle(for: url)
-                        showRenameAlert = true
+                HStack(spacing: 4) {
+                    Button {
+                        rapidFireCreate()
+                    } label: {
+                        Image(systemName: "plus")
                     }
-                    Button("Move to...") {
-                        showMovePicker = true
+                    Menu {
+                        Button("Rename") {
+                            renameText = store.displayTitle(for: url)
+                            showRenameAlert = true
+                        }
+                        Button("Move to...") {
+                            showMovePicker = true
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis.circle")
                     }
-                } label: {
-                    Image(systemName: "ellipsis.circle")
                 }
             }
             if contentType == "link" {
@@ -360,6 +371,14 @@ struct CaptureDetailView: View {
             }
             isSavingNote = false
         }
+    }
+
+    // MARK: - Rapid fire
+
+    private func rapidFireCreate() {
+        let notebook = url.deletingLastPathComponent()
+        guard let newURL = try? store.createCapture(title: "capture", body: "", notebook: notebook) else { return }
+        NotificationCenter.default.post(name: .rapidFireCreateCapture, object: newURL)
     }
 
     // MARK: - Link body
